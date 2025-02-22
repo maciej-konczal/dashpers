@@ -1,36 +1,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-let supabase: ReturnType<typeof createClient>;
+// These are public values required for client-side initialization
+const supabaseUrl = 'https://lftfifzcjiaaypkqxgxc.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmdGZpZnpjamlhYXlwa3F4Z3hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAyMTI5OTEsImV4cCI6MjA1NTc4ODk5MX0.2w8ZDxPM4_TyfnksVlm4ZnQTQQwNuayToYkX4UVmVW4';
 
-const initSupabase = async () => {
-  if (supabase) return supabase;
-
-  try {
-    const response = await fetch('https://lftfifzcjiaaypkqxgxc.supabase.co/functions/v1/get-supabase-config');
-    const { url, anonKey } = await response.json();
-
-    if (!url || !anonKey) {
-      throw new Error('Invalid Supabase configuration');
-    }
-
-    supabase = createClient(url, anonKey);
-    return supabase;
-  } catch (error) {
-    console.error('Failed to initialize Supabase client:', error);
-    throw error;
-  }
-};
-
-// Initialize the client
-initSupabase();
-
-// Export a function to get the initialized client
-export const getSupabase = () => {
-  if (!supabase) {
-    throw new Error('Supabase client not initialized');
-  }
-  return supabase;
-};
-
-export { supabase };
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
