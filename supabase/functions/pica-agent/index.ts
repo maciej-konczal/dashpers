@@ -1,5 +1,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { Pica } from "npm:@picahq/ai";
+import { openai } from "npm:@ai-sdk/openai";
+import { convertToCoreMessages, streamText } from "npm:ai";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,57 +17,40 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, tool = "weather", maxSteps = 5 } = await req.json();
-    console.log('Received request with params:', { prompt, tool, maxSteps });
+    const { messages } = await req.json();
+    console.log('Received messages:', messages);
 
     const pica_key = Deno.env.get('PICA_SECRET_KEY');
     if (!pica_key) {
       throw new Error('PICA_SECRET_KEY is not set');
     }
 
-    // Using the base URL and v1 API endpoint
-    const requestBody = {
-      model: "gpt-4o-mini",
-      messages: [{ role: 'user', content: prompt }],
-      tool: tool,
-      max_steps: maxSteps
-    };
+    // Initialize Pica client
+    const pica = new Pica(pica_key);
 
-    const requestConfig = {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${pica_key}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+    // Generate system prompt
+    const system = await pica.generateSystemPrompt();
+    console.log('Generated system prompt');
+
+    // Create the stream
+    const stream = await streamText({
+      model: openai("gpt-4o"),
+      system,
+      tools: {
+        ...pica.oneTool,
       },
-      body: JSON.stringify(requestBody)
-    };
-
-    // Use the base API endpoint
-    const response = await fetch('https://api.pica.io/v1/chat', requestConfig);
-    console.log('Response status:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API error response:', errorText);
-      throw new Error(`Pica API error (${response.status}): ${errorText}`);
-    }
-
-    const result = await response.json();
-    console.log('Successfully received response from Pica');
-    
-    return new Response(JSON.stringify({ result }), {
-      headers: {
-        ...corsHeaders,
-        'Cache-Control': 'no-cache'
-      }
+      messages: convertToCoreMessages(messages),
+      maxSteps: 20,
     });
+
+    console.log('Stream created successfully');
+    return stream.toDataStreamResponse();
+
   } catch (error) {
     console.error('Detailed error in pica-agent:', {
       name: error.name,
       message: error.message,
       stack: error.stack,
-      cause: error.cause,
       type: typeof error,
       errorObject: JSON.stringify(error, Object.getOwnPropertyNames(error))
     });
