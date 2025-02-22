@@ -46,14 +46,27 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
   const { data: salesforceData, isLoading, error } = useQuery({
     queryKey: ['salesforce-data', config.id, soql_query],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('salesforce-tasks', {
-        body: {
-          query: soql_query,
-          maxRecords: max_records
+      try {
+        const { data, error } = await supabase.functions.invoke('salesforce-tasks', {
+          body: {
+            query: soql_query,
+            maxRecords: max_records
+          }
+        });
+        
+        if (error) {
+          // Check if it's a service limit error (non-2xx status)
+          if (error.message?.includes('non-2xx status code')) {
+            throw new Error('Service not available. We are using free plans for now.');
+          }
+          throw error;
         }
-      });
-      if (error) throw error;
-      return data.records;
+        
+        return data.records;
+      } catch (err) {
+        console.error('Salesforce query error:', err);
+        throw err;
+      }
     }
   });
 
@@ -135,7 +148,9 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
           )}
           
           {error && (
-            <p className="text-red-500">Error loading data: {error.message}</p>
+            <div className="text-red-500">
+              Error: {error instanceof Error ? error.message : 'An error occurred'}
+            </div>
           )}
 
           {salesforceData && (

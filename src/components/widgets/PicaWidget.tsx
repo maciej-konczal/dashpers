@@ -35,7 +35,13 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
         }
       });
 
-      if (picaError) throw picaError;
+      if (picaError) {
+        // Check if it's a service limit error (non-2xx status)
+        if (picaError.message?.includes('non-2xx status code')) {
+          throw new Error('Service not available. We are using free plans for now.');
+        }
+        throw picaError;
+      }
 
       // Handle both response formats (data.text or data.response)
       setResult(data.response || data.text);
