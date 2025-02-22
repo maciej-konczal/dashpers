@@ -38,11 +38,16 @@ const tools = {
     parameters: {
       type: "object",
       properties: {
+        title: {
+          type: "string",
+          description: "The title of the widget (required, must be preserved from current widget if not changing)"
+        },
         preferences: {
           type: "object",
           description: "Any widget preferences that need to be updated. Can include visual properties (backgroundColor, etc), data configuration, or any other widget-specific settings."
         }
-      }
+      },
+      required: ["title"]
     }
   },
   final_answer: {
@@ -74,7 +79,8 @@ Always follow these rules:
 4. If they just need information or have a question, use final_answer tool
 5. Always be clear and concise in your responses
 6. For ANY widget modifications in edit mode, use update_widget and include the changes in preferences
-7. If you don't understand the request or can't help, use final_answer to explain why`;
+7. IMPORTANT: When using update_widget, ALWAYS include the current widget's title unless specifically asked to change it
+8. If you don't understand the request or can't help, use final_answer to explain why`;
 
   if (currentWidget) {
     basePrompt += `\n\nCURRENT WIDGET CONTEXT:
@@ -83,6 +89,7 @@ ${JSON.stringify(currentWidget, null, 2)}
 
 When using the update_widget tool:
 - Use it for ANY changes to the widget (visual, data, or configuration)
+- ALWAYS include the current widget's title in the response (required field)
 - Only include properties that need to be changed in the preferences object
 - Preserve existing preferences unless explicitly asked to change them
 - Keep the widget type as is unless specifically asked to change it
@@ -94,7 +101,7 @@ When using the update_widget tool:
 {
   "tool": "tool_name",
   "parameters": {
-    // tool-specific parameters
+    // tool-specific parameters including required fields
   }
 }`;
 
@@ -102,7 +109,6 @@ When using the update_widget tool:
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -141,6 +147,11 @@ serve(async (req) => {
     
     const toolCall = JSON.parse(aiResponse.choices[0].message.content);
     console.log('Tool Call:', toolCall);
+
+    // Ensure title is preserved for widget updates
+    if (toolCall.tool === 'update_widget' && currentWidget && !toolCall.parameters.title) {
+      toolCall.parameters.title = currentWidget.title;
+    }
 
     return new Response(JSON.stringify({
       message: aiResponse.choices[0].message.content,
