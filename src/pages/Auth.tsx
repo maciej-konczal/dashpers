@@ -98,11 +98,11 @@ const Auth = () => {
             </Button>
 
             {/* Test credentials info */}
-            <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
-              <p className="text-sm text-slate-600 font-medium mb-2">Test Credentials:</p>
+            <div className="mt-6 p-4 rounded-lg border border-red-200 bg-red-50">
+              <p className="text-sm font-medium mb-2 text-red-900">Test Credentials:</p>
               <div className="space-y-1">
-                <p className="text-sm text-slate-600">Email: maciej@dashpers.com</p>
-                <p className="text-sm text-slate-600">Password: pbm6tbe-wxf.aqg3CAC</p>
+                <p className="text-sm text-red-800">Email: maciej@dashpers.com</p>
+                <p className="text-sm text-red-800">Password: pbm6tbe-wxf.aqg3CAC</p>
               </div>
             </div>
           </form>
