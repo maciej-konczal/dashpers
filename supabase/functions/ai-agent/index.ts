@@ -1,9 +1,19 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, generateSystemPrompt, tryParseJSON, validateSalesforceConfig } from './utils.ts';
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { fal } from "npm:@fal-ai/client";
+import { generateSystemPrompt, corsHeaders, tryParseJSON, validateSalesforceConfig } from './utils.ts';
+import { tools } from './tools.ts';
+
+const FAL_AI_KEY = Deno.env.get('FAL_AI_KEY');
+
+// Configure fal client
+fal.config({
+  credentials: FAL_AI_KEY,
+});
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -11,83 +21,93 @@ serve(async (req) => {
   try {
     const { messages, currentWidget } = await req.json();
 
-    console.log('Received request with messages:', messages);
-    console.log('Current widget context:', currentWidget);
-    
+    // Format the conversation history
+    const conversation = messages.map(({ role, content }: { role: string; content: string }) => {
+      if (role === 'system') return content;
+      return role === 'user' ? `Human: ${content}` : `Assistant: ${content}`;
+    }).join('\n');
+
     const systemPrompt = generateSystemPrompt(currentWidget);
-    
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-        'Content-Type': 'application/json',
+    const prompt = `${systemPrompt}\n\n${conversation}\n\nHuman: ${messages[messages.length - 1].content}\n\nAssistant:`;
+
+    console.log('Starting fal.ai request with prompt:', prompt);
+
+    // Use fal.ai with Claude 3.5 Sonnet
+    const result = await fal.subscribe("fal-ai/any-llm", {
+      input: {
+        model: "anthropic/claude-3-sonnet",
+        prompt: prompt,
       },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...messages
-        ],
-        temperature: 0.7,
-      }),
+      logs: true,
+      onQueueUpdate: (update) => {
+        console.log('Queue update:', update);
+      }
     });
 
-    if (!response.ok) {
-      console.error('OpenAI API error:', await response.text());
-      throw new Error('Failed to get AI response');
-    }
+    console.log('Fal.ai Response:', result);
 
-    const aiResponse = await response.json();
-    console.log('AI Response:', aiResponse);
+    const assistantResponse = result.data?.output || '';
     
-    const parsed = tryParseJSON(aiResponse.choices[0].message.content);
-    if (!parsed.success) {
-      console.error('Failed to parse AI response:', parsed.error);
-      return new Response(JSON.stringify({
-        error: 'Invalid AI response format',
-        details: parsed.error
-      }), {
-        status: 400,
-        headers: corsHeaders
-      });
+    // Parse the response
+    let toolCall = null;
+    let finalMessage = assistantResponse;
+
+    // Look for a JSON object in the response
+    const functionCallMatch = assistantResponse.match(/\{[\s\S]*\}/);
+    if (functionCallMatch) {
+      try {
+        const parsed = tryParseJSON(functionCallMatch[0]);
+        if (parsed.success) {
+          toolCall = parsed.data;
+          // Remove the JSON from the message
+          finalMessage = assistantResponse.replace(functionCallMatch[0], '').trim();
+        } else {
+          console.error('Failed to parse tool call:', parsed.error);
+        }
+      } catch (e) {
+        console.error('Error extracting tool call:', e);
+      }
     }
 
-    const toolCall = parsed.data;
-    console.log('Tool Call:', toolCall);
-
-    // Ensure title is preserved for widget updates
-    if (toolCall.tool === 'update_widget' && currentWidget && !toolCall.parameters.title) {
-      toolCall.parameters.title = currentWidget.title;
+    // Validate specific configurations
+    if (toolCall) {
+      const validationResult = validateSalesforceConfig(toolCall);
+      if (!validationResult.isValid) {
+        return new Response(
+          JSON.stringify({
+            message: validationResult.error,
+            tool: "final_answer"
+          }),
+          { headers: corsHeaders }
+        );
+      }
     }
 
-    // Validate Salesforce widget configurations
-    const validation = validateSalesforceConfig(toolCall);
-    if (!validation.isValid) {
-      return new Response(JSON.stringify({
-        error: 'Invalid Salesforce widget configuration',
-        details: validation.error
-      }), {
-        status: 400,
-        headers: corsHeaders
-      });
-    }
+    // Prepare the response
+    const response = {
+      message: finalMessage,
+      ...(toolCall && toolCall.tool && tools[toolCall.tool] ? {
+        tool: toolCall.tool,
+        widgetConfig: toolCall.parameters
+      } : {
+        tool: "final_answer"
+      })
+    };
 
-    return new Response(JSON.stringify({
-      message: aiResponse.choices[0].message.content,
-      tool: toolCall.tool,
-      widgetConfig: toolCall.parameters
-    }), {
-      headers: corsHeaders
-    });
+    return new Response(
+      JSON.stringify(response),
+      { headers: corsHeaders }
+    );
 
   } catch (error) {
-    console.error('Error in AI agent:', error);
-    return new Response(JSON.stringify({ 
-      error: error.message,
-      details: error.stack 
-    }), {
-      status: 500,
-      headers: corsHeaders
-    });
+    console.error('Error:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: error.message,
+        tool: "final_answer",
+        message: "Sorry, I encountered an error processing your request."
+      }),
+      { headers: corsHeaders, status: 500 }
+    );
   }
 });
