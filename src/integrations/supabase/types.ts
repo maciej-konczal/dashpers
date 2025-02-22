@@ -39,6 +39,36 @@ export type Database = {
         }
         Relationships: []
       }
+      widget_type_configs: {
+        Row: {
+          available_preferences: Json
+          created_at: string | null
+          default_title: string
+          description: string | null
+          required_connection_type: string | null
+          type: Database["public"]["Enums"]["widget_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          available_preferences?: Json
+          created_at?: string | null
+          default_title: string
+          description?: string | null
+          required_connection_type?: string | null
+          type: Database["public"]["Enums"]["widget_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          available_preferences?: Json
+          created_at?: string | null
+          default_title?: string
+          description?: string | null
+          required_connection_type?: string | null
+          type?: Database["public"]["Enums"]["widget_type"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       widgets: {
         Row: {
           connection_id: string | null
@@ -46,7 +76,7 @@ export type Database = {
           id: string
           preferences: Json | null
           title: string
-          type: string
+          type: Database["public"]["Enums"]["widget_type"]
           updated_at: string | null
           user_id: string | null
         }
@@ -56,7 +86,7 @@ export type Database = {
           id?: string
           preferences?: Json | null
           title: string
-          type: string
+          type?: Database["public"]["Enums"]["widget_type"]
           updated_at?: string | null
           user_id?: string | null
         }
@@ -66,7 +96,7 @@ export type Database = {
           id?: string
           preferences?: Json | null
           title?: string
-          type?: string
+          type?: Database["public"]["Enums"]["widget_type"]
           updated_at?: string | null
           user_id?: string | null
         }
@@ -88,7 +118,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      widget_type:
+        | "salesforce"
+        | "slack"
+        | "news"
+        | "weather"
+        | "calendar"
+        | "chart"
+        | "sample"
     }
     CompositeTypes: {
       [_ in never]: never
