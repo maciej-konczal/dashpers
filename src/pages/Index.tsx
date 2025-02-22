@@ -108,7 +108,7 @@ const Index = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="flex items-center justify-between p-4 border-b bg-white/50 backdrop-blur-sm">
         <div className="flex items-center gap-2">
-          <span className="text-3xl font-['Roboto'] font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-purple-400 to-purple-600">-pers</span>
+          <span className="text-3xl font-['Roboto'] font-bold text-black">—pers</span>
         </div>
         <Button onClick={handleLogout}>Logout</Button>
       </div>
