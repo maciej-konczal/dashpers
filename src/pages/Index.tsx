@@ -49,14 +49,26 @@ const Index = () => {
   }, [navigate]);
 
   const formatWidgetContent = (widget: any) => {
+    console.log('Formatting widget:', { type: widget.type, title: widget.title });
     let content = widget.content;
     
     try {
-      // First try to parse the content if it's JSON
+      // Log raw content before processing
+      console.log('Raw widget content:', { type: widget.type, content });
+      
+      if (widget.type === 'note') {
+        // Handle note widget - use content directly
+        console.log('Processing note widget');
+        return `${widget.title} (${widget.type}):\n${content}`;
+      }
+
+      // For other types, try to parse JSON
       const parsedContent = JSON.parse(content);
+      console.log('Parsed content:', { type: widget.type, parsedContent });
       
       if (widget.type === 'salesforce') {
         // Handle Salesforce widget data
+        console.log('Processing Salesforce widget');
         if (Array.isArray(parsedContent)) {
           content = parsedContent.map(record => 
             Object.entries(record)
@@ -66,11 +78,13 @@ const Index = () => {
         }
       } else if (widget.type === 'calendar') {
         // Handle Calendar widget data
+        console.log('Processing calendar widget');
         content = parsedContent.events?.map((event: any) => 
           `Event: "${event.title}" on ${event.date} at ${event.time}`
         ).join('\n') || content;
       } else if (widget.type === 'weather') {
         // Handle Weather widget data
+        console.log('Processing weather widget');
         const weather = parsedContent;
         content = [
           `Condition: ${weather.condition || 'N/A'}`,
@@ -83,10 +97,17 @@ const Index = () => {
       }
     } catch (e) {
       // If parsing fails, use the content as is
-      console.log('Content parsing failed for widget', widget.title, e);
+      console.log('Content parsing failed for widget', {
+        title: widget.title,
+        type: widget.type,
+        error: e.message,
+        rawContent: content
+      });
     }
     
-    return `${widget.title} (${widget.type}):\n${content}`;
+    const formattedWidget = `${widget.title} (${widget.type}):\n${content}`;
+    console.log('Formatted widget result:', formattedWidget);
+    return formattedWidget;
   };
 
   const summarizeWidgets = async () => {
@@ -95,12 +116,19 @@ const Index = () => {
     setShowSummary(true);
     
     try {
+      // Log all widgets before processing
+      console.log('All widgets to process:', widgetContents.map(w => ({
+        type: w.type,
+        title: w.title,
+        hasContent: Boolean(w.content)
+      })));
+
       // Format all widgets with proper type handling
       const formattedContent = widgetContents
         .map(formatWidgetContent)
         .join('\n\n---\n\n'); // Clear separation between widgets
 
-      console.log('Formatted content for summary:', formattedContent);
+      console.log('Final formatted content for summary:', formattedContent);
 
       const { data, error } = await supabase.functions.invoke('summarize-widgets', {
         body: { content: formattedContent }
