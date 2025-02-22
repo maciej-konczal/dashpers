@@ -15,7 +15,7 @@ export const SampleWidget: React.FC<SampleWidgetProps> = ({ config }) => {
       </CardHeader>
       <CardContent>
         <p className="text-muted-foreground">
-          {config.data?.content || "This is a sample widget. You can customize it based on your needs."}
+          {config.content || "This is a sample widget. You can customize it based on your needs."}
         </p>
       </CardContent>
     </Card>

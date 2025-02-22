@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { WidgetRegistry } from './widgets/WidgetRegistry';
-import { WidgetConfig, WidgetType, WidgetPreferences } from '@/types/widgets';
+import { WidgetConfig, WidgetType, WidgetPreferences, WidgetData } from '@/types/widgets';
 import { supabase } from '@/lib/supabase';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { Button } from './ui/button';
@@ -44,7 +45,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onEditWidget }) => {
               id: payload.new.id,
               type: payload.new.type,
               title: payload.new.title,
-              preferences: payload.new.preferences
+              preferences: payload.new.preferences,
+              content: payload.new.content
             };
             setWidgets(currentWidgets => [...currentWidgets, newWidget]);
           }
@@ -81,7 +83,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onEditWidget }) => {
               id: payload.new.id,
               type: payload.new.type,
               title: payload.new.title,
-              preferences: payload.new.preferences
+              preferences: payload.new.preferences,
+              content: payload.new.content
             };
             setWidgets(currentWidgets =>
               currentWidgets.map(widget =>
