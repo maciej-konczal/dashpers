@@ -21,12 +21,12 @@ serve(async (req) => {
   }
 
   try {
-    const { message } = await req.json();
-    console.log('Received message:', message);
+    const { messages } = await req.json();
+    console.log('Received messages:', messages);
 
-    if (!message) {
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'Message is required' }), 
+        JSON.stringify({ error: 'Valid messages array is required' }), 
         { status: 400, headers: corsHeaders }
       );
     }
@@ -51,11 +51,18 @@ serve(async (req) => {
 
     try {
       console.log('Starting generateText...');
+      // Extract the user's message content from the messages array
+      const userMessage = messages.find(m => m.role === 'user')?.content;
+      
+      if (!userMessage) {
+        throw new Error('No user message found in messages array');
+      }
+
       const { text } = await generateText({
-        model: openai("gpt-4"),  // Using gpt-4 instead of gpt-4o
+        model: openai("gpt-4"),
         system: systemPrompt,
-        tools: pica.oneTool,  // Passing tools directly
-        prompt: message,
+        tools: pica.oneTool,
+        prompt: userMessage,
         maxSteps: 5,
       });
       console.log('Text generated successfully');
