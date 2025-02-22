@@ -48,8 +48,18 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onCommand }) => {
 
       const { message, widgetConfig, tool } = response.data;
 
-      // Add assistant response to chat
-      setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+      // Always add assistant response to chat if there's a message
+      if (message) {
+        setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+      } else {
+        // Fallback message if no message was provided
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: tool === 'create_widget' 
+            ? "I'll create that widget for you right away." 
+            : "I've processed your request."
+        }]);
+      }
 
       // If widget config was generated, create it
       if (tool === 'create_widget' && widgetConfig) {
@@ -65,9 +75,19 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onCommand }) => {
           if (widgetError) throw widgetError;
           
           toast.success('Widget created successfully!');
+          
+          // Add a confirmation message to the chat
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: 'I\'ve successfully created the widget for you!' 
+          }]);
         } catch (error) {
           console.error('Error creating widget:', error);
           toast.error('Failed to create widget');
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: 'Sorry, I encountered an error while creating the widget.' 
+          }]);
         }
       }
     } catch (error) {
