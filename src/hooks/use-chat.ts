@@ -36,10 +36,13 @@ export const useChat = (onCommand: (command: string) => void) => {
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
 
     try {
+      // Fetch current widget data first if we're editing
+      const currentWidgetData = editingWidgetId ? await fetchWidgetData(editingWidgetId) : null;
+
       const response = await supabase.functions.invoke('ai-agent', {
         body: { 
           messages: [...messages, { role: 'user', content: userMessage }],
-          currentWidget: editingWidgetId ? await fetchWidgetData(editingWidgetId) : null
+          currentWidget: currentWidgetData
         }
       });
 
@@ -69,13 +72,24 @@ export const useChat = (onCommand: (command: string) => void) => {
 
         try {
           let result;
-          if (tool === 'update_widget' && editingWidgetId) {
+          if (tool === 'update_widget' && editingWidgetId && currentWidgetData) {
+            // Merge the new preferences with existing ones
+            const updatedPreferences = {
+              ...currentWidgetData.preferences,
+              ...(widgetConfig.preferences || {})
+            };
+
+            // Merge all widget data, preserving existing fields unless explicitly changed
+            const updatedWidget = {
+              ...currentWidgetData,
+              ...widgetConfig,
+              preferences: updatedPreferences,
+              updated_at: new Date().toISOString(),
+            };
+
             result = await supabase
               .from('widgets')
-              .update({
-                ...widgetConfig,
-                updated_at: new Date().toISOString(),
-              })
+              .update(updatedWidget)
               .eq('id', editingWidgetId);
 
             if (result.error) throw result.error;
