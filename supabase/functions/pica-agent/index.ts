@@ -28,7 +28,7 @@ serve(async (req) => {
       );
     }
 
-    const aiServiceUrl = 'https://pica-handler.onrender.com';
+    const aiServiceUrl = 'https://pica-handler.onrender.com/chat';
     console.log('Using AI service URL:', aiServiceUrl);
 
     try {
