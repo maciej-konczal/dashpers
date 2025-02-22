@@ -5,15 +5,16 @@ import { WidgetConfig, WidgetType, WidgetPreferences, WidgetData } from '@/types
 import { supabase } from '@/lib/supabase';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { Button } from './ui/button';
-import { Pencil } from 'lucide-react';
+import { Pencil, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface DashboardProps {
   onEditWidget: (widgetId: string) => void;
   editingWidgetId?: string | null;
+  onCancelEdit: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ onEditWidget, editingWidgetId }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ onEditWidget, editingWidgetId, onCancelEdit }) => {
   const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
 
   useEffect(() => {
@@ -107,8 +108,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onEditWidget, editingWidge
   return (
     <div className="space-y-4">
       {editingWidgetId && (
-        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded-lg mx-4">
-          Editing widget. Type your changes in the chat panel.
+        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded-lg mx-4 flex justify-between items-center">
+          <span>Editing widget. Type your changes in the chat panel.</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onCancelEdit}
+            className="h-8 w-8 hover:bg-blue-100"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       )}
       <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

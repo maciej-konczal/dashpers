@@ -85,6 +85,11 @@ const Index = () => {
     toast.info("Edit mode activated. Describe your changes in the chat.");
   };
 
+  const handleCancelEdit = () => {
+    setEditingWidgetId(null);
+    toast.info("Edit mode disabled");
+  };
+
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -104,7 +109,11 @@ const Index = () => {
       </div>
       <ChatPanel onCommand={handleCommand} editingWidgetId={editingWidgetId} />
       <main className="pl-0 transition-all duration-300">
-        <Dashboard onEditWidget={handleEditWidget} editingWidgetId={editingWidgetId} />
+        <Dashboard 
+          onEditWidget={handleEditWidget} 
+          editingWidgetId={editingWidgetId} 
+          onCancelEdit={handleCancelEdit}
+        />
       </main>
     </div>
   );
