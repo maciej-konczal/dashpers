@@ -6,6 +6,7 @@ import { ArrowLeftFromLine, ArrowRightFromLine, Send } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { WidgetConfig } from '@/types/widgets';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -21,6 +22,22 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onCommand }) => {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
+
+  const fetchWidgetData = async (widgetId: string): Promise<WidgetConfig | null> => {
+    const { data, error } = await supabase
+      .from('widgets')
+      .select('*')
+      .eq('id', widgetId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching widget:', error);
+      return null;
+    }
+
+    return data;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,9 +53,19 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onCommand }) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      // If we're editing a widget, fetch its current data
+      let currentWidget = null;
+      if (editingWidgetId) {
+        currentWidget = await fetchWidgetData(editingWidgetId);
+        if (!currentWidget) {
+          throw new Error("Could not find widget to edit");
+        }
+      }
+
       const response = await supabase.functions.invoke('ai-agent', {
         body: { 
-          messages: [...messages, { role: 'user', content: userMessage }]
+          messages: [...messages, { role: 'user', content: userMessage }],
+          currentWidget: currentWidget // Pass current widget data if editing
         }
       });
 
@@ -57,36 +84,60 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onCommand }) => {
           role: 'assistant', 
           content: tool === 'create_widget' 
             ? "I'll create that widget for you right away." 
+            : tool === 'update_widget'
+            ? "I'll update the widget with your changes."
             : "I've processed your request."
         }]);
       }
 
-      // If widget config was generated, create it
-      if (tool === 'create_widget' && widgetConfig) {
-        try {
-          const { error: widgetError } = await supabase
-            .from('widgets')
-            .insert({
-              ...widgetConfig,
-              user_id: user?.id,
-              created_at: new Date().toISOString(),
-            });
+      // Handle widget creation or update
+      if (tool === 'create_widget' || tool === 'update_widget') {
+        if (!widgetConfig) {
+          throw new Error('No widget configuration provided');
+        }
 
-          if (widgetError) throw widgetError;
-          
-          toast.success('Widget created successfully!');
+        try {
+          let result;
+          if (tool === 'update_widget' && editingWidgetId) {
+            // Update existing widget
+            result = await supabase
+              .from('widgets')
+              .update({
+                ...widgetConfig,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', editingWidgetId);
+
+            if (result.error) throw result.error;
+            toast.success('Widget updated successfully!');
+            setEditingWidgetId(null); // Clear editing state
+          } else {
+            // Create new widget
+            result = await supabase
+              .from('widgets')
+              .insert({
+                ...widgetConfig,
+                user_id: user?.id,
+                created_at: new Date().toISOString(),
+              });
+
+            if (result.error) throw result.error;
+            toast.success('Widget created successfully!');
+          }
           
           // Add a confirmation message to the chat
           setMessages(prev => [...prev, { 
             role: 'assistant', 
-            content: 'I\'ve successfully created the widget for you!' 
+            content: tool === 'update_widget' 
+              ? "I've successfully updated the widget for you!"
+              : "I've successfully created the widget for you!"
           }]);
         } catch (error) {
-          console.error('Error creating widget:', error);
-          toast.error('Failed to create widget');
+          console.error('Error with widget operation:', error);
+          toast.error(tool === 'update_widget' ? 'Failed to update widget' : 'Failed to create widget');
           setMessages(prev => [...prev, { 
             role: 'assistant', 
-            content: 'Sorry, I encountered an error while creating the widget.' 
+            content: `Sorry, I encountered an error while ${tool === 'update_widget' ? 'updating' : 'creating'} the widget.`
           }]);
         }
       }
@@ -120,7 +171,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onCommand }) => {
       >
         <div className="flex flex-col h-full p-4">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Dashboard Assistant</h2>
+            <h2 className="text-xl font-semibold">
+              {editingWidgetId ? 'Edit Widget' : 'Dashboard Assistant'}
+            </h2>
             <Button
               onClick={() => setIsOpen(false)}
               size="icon"
@@ -147,7 +200,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onCommand }) => {
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask for a widget..."
+              placeholder={editingWidgetId ? "Describe your changes..." : "Ask for a widget..."}
               className="flex-grow"
               disabled={isProcessing}
             />
