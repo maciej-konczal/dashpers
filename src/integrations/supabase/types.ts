@@ -9,8 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      connections: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          name: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          name: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       widgets: {
         Row: {
+          connection_id: string | null
           created_at: string | null
           id: string
           preferences: Json | null
@@ -20,6 +51,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          connection_id?: string | null
           created_at?: string | null
           id?: string
           preferences?: Json | null
@@ -29,6 +61,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          connection_id?: string | null
           created_at?: string | null
           id?: string
           preferences?: Json | null
@@ -37,7 +70,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "widgets_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
