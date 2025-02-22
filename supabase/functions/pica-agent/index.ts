@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { AI } from "https://esm.sh/@picahq/ai@2.0.8";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,18 +21,30 @@ serve(async (req) => {
       throw new Error('PICA_SECRET_KEY is not set');
     }
 
-    console.log('Initializing Pica with key length:', pica_key.length);
-    const pica = new AI(pica_key);
-
-    console.log('Preparing chat request with:', { prompt, tool, maxSteps });
-    const result = await pica.chat({
-      messages: [{ role: 'user', content: prompt }],
-      tool: tool,
-      maxSteps: maxSteps,
-      apiUrl: 'https://chat.pica.io/v1' // Explicitly set the API URL
+    console.log('Preparing chat request to Pica API');
+    
+    // Make direct API call since the SDK isn't compatible with Deno
+    const response = await fetch('https://chat.pica.io/v1/chat', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${pica_key}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: prompt }],
+        tool: tool,
+        maxSteps: maxSteps
+      })
     });
 
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`Pica API error (${response.status}): ${errorData}`);
+    }
+
+    const result = await response.json();
     console.log('Pica chat response received');
+    
     return new Response(JSON.stringify({ result }), {
       headers: {
         ...corsHeaders,
