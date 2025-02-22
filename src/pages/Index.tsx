@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChatPanel } from '@/components/ChatPanel';
@@ -58,27 +57,23 @@ const Index = () => {
         .map(w => `${w.title} (${w.type}):\n${w.content}`)
         .join('\n\n');
 
-      const prompt = `Please provide a concise summary of these widget contents:\n\n${formattedContent}`;
+      const messages = [{
+        role: 'user',
+        content: `Please provide a concise summary of these widget contents:\n\n${formattedContent}`
+      }];
 
-      const response = await fetch('https://fal.run/fal-ai/claude-instant-1', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Key ${import.meta.env.VITE_FAL_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt,
-          max_tokens: 500,
-          temperature: 0.7,
-        }),
+      const { data, error } = await supabase.functions.invoke('ai-agent', {
+        body: { 
+          messages,
+          currentWidget: null
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate summary');
+      if (error) {
+        throw error;
       }
 
-      const data = await response.json();
-      setSummary(data.response);
+      setSummary(data.message);
     } catch (error) {
       console.error('Error generating summary:', error);
       toast.error('Failed to generate summary');
