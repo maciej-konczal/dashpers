@@ -80,7 +80,8 @@ Always follow these rules:
 5. Always be clear and concise in your responses
 6. For ANY widget modifications in edit mode, use update_widget and include the changes in preferences
 7. IMPORTANT: When using update_widget, ALWAYS include the current widget's title unless specifically asked to change it
-8. If you don't understand the request or can't help, use final_answer to explain why`;
+8. If you don't understand the request or can't help, use final_answer to explain why
+9. VERY IMPORTANT: Your response MUST be valid JSON with all property names double-quoted`;
 
   if (currentWidget) {
     basePrompt += `\n\nCURRENT WIDGET CONTEXT:
@@ -97,15 +98,38 @@ When using the update_widget tool:
 - If updating data configuration, include it in preferences (e.g. soql_query for Salesforce)`;
   }
 
-  basePrompt += `\n\nRespond in the following JSON format:
+  basePrompt += `\n\nYou MUST respond with properly formatted JSON. Example format:
 {
   "tool": "tool_name",
   "parameters": {
-    // tool-specific parameters including required fields
+    "title": "Widget Title",
+    "preferences": {
+      "key": "value"
+    }
   }
 }`;
 
   return basePrompt;
+}
+
+function tryParseJSON(jsonString: string): { success: boolean; data?: any; error?: string } {
+  try {
+    const data = JSON.parse(jsonString);
+    if (typeof data !== 'object' || !data.tool || !data.parameters) {
+      return {
+        success: false,
+        error: 'Invalid response format. Expected object with tool and parameters.'
+      };
+    }
+    return { success: true, data };
+  } catch (error) {
+    console.error('JSON parsing error:', error);
+    console.error('Problematic JSON string:', jsonString);
+    return {
+      success: false,
+      error: `Failed to parse JSON: ${error.message}`
+    };
+  }
 }
 
 serve(async (req) => {
@@ -145,7 +169,19 @@ serve(async (req) => {
     const aiResponse = await response.json();
     console.log('AI Response:', aiResponse);
     
-    const toolCall = JSON.parse(aiResponse.choices[0].message.content);
+    const parsed = tryParseJSON(aiResponse.choices[0].message.content);
+    if (!parsed.success) {
+      console.error('Failed to parse AI response:', parsed.error);
+      return new Response(JSON.stringify({
+        error: 'Invalid AI response format',
+        details: parsed.error
+      }), {
+        status: 400,
+        headers: corsHeaders
+      });
+    }
+
+    const toolCall = parsed.data;
     console.log('Tool Call:', toolCall);
 
     // Ensure title is preserved for widget updates
