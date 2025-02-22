@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Pica } from "https://esm.sh/@picahq/ai";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,17 +21,30 @@ serve(async (req) => {
       throw new Error('PICA_SECRET_KEY is not set');
     }
 
-    console.log('Initializing Pica with provided key');
-    const pica = new Pica(pica_key);
-
-    console.log('Executing Pica generate with prompt:', prompt);
-    const result = await pica.generate({
-      prompt,
-      tool,
-      maxSteps,
+    console.log('Making request to Pica API with prompt:', prompt);
+    
+    const response = await fetch('https://api.pica.io/v1/generate', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${pica_key}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt,
+        tool,
+        maxSteps,
+      }),
     });
 
-    console.log('Pica generation successful');
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Pica API error response:', errorText);
+      throw new Error(`Pica API error: ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('Pica API response successful:', result);
+
     return new Response(JSON.stringify({ result }), {
       headers: corsHeaders,
     });
