@@ -55,20 +55,20 @@ serve(async (req) => {
 
     try {
       // Create the stream
-      const stream = await streamText({
-        model: openai("gpt-4o"),
-        system,
-        tools: {
-          ...pica.oneTool,
-        },
-        messages: formattedMessages,
-        maxSteps: body.maxSteps || 20,
+      const completion = await openai("gpt-4o").chat.completions.create({
+        messages: [
+          { role: "system", content: system },
+          ...formattedMessages
+        ],
+        tools: pica.oneTool,
+        stream: false,
+        max_tokens: 1000
       });
 
-      console.log('Stream created successfully');
+      console.log('Completion received:', completion);
 
-      // Get the final text response
-      const result = await stream.finalText();
+      // Extract the response from the completion
+      const result = completion.choices[0]?.message?.content || '';
       console.log('Got final result:', result);
 
       // Return the result as a properly formatted JSON response
@@ -78,9 +78,9 @@ serve(async (req) => {
       );
 
     } catch (streamError) {
-      console.error('Stream error:', streamError);
+      console.error('OpenAI error:', streamError);
       return new Response(
-        JSON.stringify({ error: 'Stream error', details: streamError.message }), 
+        JSON.stringify({ error: 'OpenAI error', details: streamError.message }), 
         { status: 500, headers: corsHeaders }
       );
     }
