@@ -27,8 +27,8 @@ function isWidgetData(data: any): data is WidgetData {
 }
 
 // Helper function to check if an object has an id property of type string
-function hasValidId(data: any): data is { id: string } {
-  return data && typeof data.id === 'string';
+function hasValidId(data: Record<string, any> | null): data is { id: string } {
+  return Boolean(data && typeof data.id === 'string');
 }
 
 export const Dashboard: React.FC = () => {
@@ -80,9 +80,10 @@ export const Dashboard: React.FC = () => {
         },
         (payload: RealtimePostgresChangesPayload<{ id: string }>) => {
           console.log('Widget deleted:', payload);
-          if (payload.old && hasValidId(payload.old)) {
+          const oldRecord = payload.old;
+          if (hasValidId(oldRecord)) {
             setWidgets(currentWidgets => 
-              currentWidgets.filter(widget => widget.id !== payload.old!.id)
+              currentWidgets.filter(widget => widget.id !== oldRecord.id)
             );
           }
         }
