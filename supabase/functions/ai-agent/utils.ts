@@ -1,6 +1,6 @@
 
-import { ParsedJSON } from './types';
-import { tools } from './tools';
+import { ParsedJSON } from './types.ts';
+import { tools } from './tools.ts';
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

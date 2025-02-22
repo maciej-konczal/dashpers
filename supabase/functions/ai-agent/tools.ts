@@ -1,5 +1,5 @@
 
-import { Tool } from './types';
+import { Tool } from './types.ts';
 
 export const tools: Record<string, Tool> = {
   create_widget: {
