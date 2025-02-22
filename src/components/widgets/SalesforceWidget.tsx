@@ -14,6 +14,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+const tailwindToHex: Record<string, string> = {
+  'bg-red': '#ef4444',    // red-500
+  'bg-blue': '#3b82f6',   // blue-500
+  'bg-green': '#22c55e',  // green-500
+  'bg-yellow': '#eab308', // yellow-500
+  'bg-purple': '#a855f7', // purple-500
+  'bg-white': '#ffffff',
+  'bg-gray': '#6b7280',   // gray-500
+};
+
 interface SalesforceWidgetProps {
   config: WidgetConfig;
 }
@@ -88,9 +98,13 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
     }
   };
 
-  // Let's try using inline styles as a test to see if it's a CSS specificity issue
   return (
-    <div style={{ backgroundColor: backgroundColor === 'bg-red' ? '#ef4444' : 'white' }} className="rounded-lg shadow-lg min-h-[200px]">
+    <div 
+      style={{ 
+        backgroundColor: tailwindToHex[backgroundColor] || tailwindToHex['bg-white']
+      }} 
+      className="rounded-lg shadow-lg min-h-[200px]"
+    >
       <Card className="widget border-none shadow-none bg-transparent">
         <CardHeader className="bg-transparent">
           <CardTitle className="bg-transparent">{config.title || 'Salesforce Data'}</CardTitle>
