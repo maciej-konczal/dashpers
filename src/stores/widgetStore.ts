@@ -1,10 +1,11 @@
 
-import { create } from 'zustand'
+import { create } from 'zustand';
+import { WidgetType } from '@/types/widgets';
 
 interface WidgetContent {
   id: string;
   title: string;
-  type: string;
+  type: WidgetType;
   content: string;
 }
 
@@ -16,8 +17,11 @@ interface WidgetStore {
 
 export const useWidgetStore = create<WidgetStore>((set) => ({
   contents: [],
-  addContent: (content) => set((state) => ({
-    contents: [...state.contents.filter(c => c.id !== content.id), content]
-  })),
+  addContent: (content) => {
+    console.log('Adding/updating content to store:', content);
+    set((state) => ({
+      contents: [...state.contents.filter(c => c.id !== content.id), content]
+    }));
+  },
   clearContents: () => set({ contents: [] })
-}))
+}));

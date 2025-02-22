@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -15,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useWidgetStore } from '@/stores/widgetStore';
 
 interface Column {
   field: string;
@@ -98,6 +98,7 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
     return stringValue;
   };
 
+  const addContent = useWidgetStore(state => state.addContent);
   const { data: salesforceData, isLoading, error } = useQuery({
     queryKey: ['salesforce-data', config.id, soql_query],
     queryFn: async () => {
@@ -116,6 +117,14 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
           }
           throw error;
         }
+        
+        // Store the content in widget store
+        addContent({
+          id: config.id,
+          title: config.title,
+          type: 'salesforce',
+          content: JSON.stringify(data.records)
+        });
         
         return data.records;
       } catch (err) {
