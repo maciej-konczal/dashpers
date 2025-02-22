@@ -48,10 +48,10 @@ serve(async (req) => {
 
     console.log('Starting fal.ai request with prompt:', prompt);
 
-    // Use fal.ai client with subscribe method
+    // Use fal.ai client with subscribe method and the correct model name
     const result = await fal.subscribe("fal-ai/any-llm", {
       input: {
-        model: "anthropic/claude-3-sonnet",
+        model: "anthropic/claude-3.5-sonnet",
         prompt: prompt,
       },
       logs: true,
