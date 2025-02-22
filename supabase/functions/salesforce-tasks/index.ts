@@ -56,6 +56,26 @@ async function getSalesforceAuth(): Promise<SalesforceAuth> {
   }
 }
 
+async function getCurrentUserId(auth: SalesforceAuth): Promise<string> {
+  try {
+    const response = await fetch(`${auth.instance_url}/services/data/v57.0/chatter/users/me`, {
+      headers: {
+        'Authorization': `Bearer ${auth.access_token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get current user info');
+    }
+
+    const data = await response.json();
+    return data.id;
+  } catch (error) {
+    console.error('Error getting current user ID:', error);
+    throw error;
+  }
+}
+
 async function executeSalesforceQuery(auth: SalesforceAuth, query: string) {
   console.log('Executing Salesforce query:', query);
   try {
@@ -89,6 +109,7 @@ serve(async (req) => {
   try {
     console.log('Starting Salesforce query function...');
     const auth = await getSalesforceAuth();
+    const userId = await getCurrentUserId(auth);
     
     // Get request body
     let body: RequestBody = {};
@@ -101,16 +122,11 @@ serve(async (req) => {
     }
 
     // Use provided query or fallback to default
-    const query = body.query || 'SELECT Id, Subject, Status, ActivityDate FROM Task ORDER BY ActivityDate DESC';
     const maxRecords = body.maxRecords || 10;
-
-    // Add LIMIT clause if not present in query
-    const finalQuery = query.toLowerCase().includes('limit') 
-      ? query 
-      : `${query} LIMIT ${maxRecords}`;
+    const query = `SELECT Id, Subject, Status, ActivityDate FROM Task WHERE OwnerId = '${userId}' ORDER BY ActivityDate DESC LIMIT ${maxRecords}`;
     
-    console.log('Executing query:', finalQuery);
-    const data = await executeSalesforceQuery(auth, finalQuery);
+    console.log('Executing query:', query);
+    const data = await executeSalesforceQuery(auth, query);
     
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
