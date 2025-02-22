@@ -28,13 +28,13 @@ const tools = {
   },
   update_widget: {
     name: "update_widget",
-    description: "Updates an existing widget based on user modifications.",
+    description: "Updates an existing widget. When in edit mode, this should be used for ANY changes to the widget including visual changes, data changes, or configuration updates.",
     parameters: {
       type: "object",
       properties: {
         preferences: {
           type: "object",
-          description: "Updated widget preferences"
+          description: "Any widget preferences that need to be updated. Can include visual properties (backgroundColor, etc), data configuration, or any other widget-specific settings."
         }
       }
     }
@@ -55,7 +55,6 @@ const tools = {
   }
 };
 
-// Generate system prompt based on context
 function generateSystemPrompt(currentWidget: any = null) {
   let basePrompt = `You are a helpful AI assistant that helps users manage their dashboard widgets. 
 You have access to the following tools:
@@ -64,24 +63,25 @@ ${JSON.stringify(tools, null, 2)}
 
 Always follow these rules:
 1. First understand if the user's request requires creating/updating a widget or just needs information
-2. If they need a new widget, use the create_widget tool
-3. If they want to modify an existing widget, use the update_widget tool
+2. If they need a new widget, use create_widget tool
+3. If they want to modify an existing widget AND you're in edit mode (currentWidget exists), ALWAYS use update_widget tool
 4. If they just need information or have a question, use final_answer tool
 5. Always be clear and concise in your responses
-6. For color changes (e.g. "change background to #123456"), ALWAYS use update_widget tool and update the preferences.backgroundColor
+6. For ANY widget modifications in edit mode, use update_widget and include the changes in preferences
 7. If you don't understand the request or can't help, use final_answer to explain why`;
 
-  // Add context about current widget if editing
   if (currentWidget) {
     basePrompt += `\n\nCURRENT WIDGET CONTEXT:
-The user is currently editing a widget with the following configuration:
+You are currently in EDIT MODE for this widget:
 ${JSON.stringify(currentWidget, null, 2)}
 
 When using the update_widget tool:
-- Only include properties that need to be changed
+- Use it for ANY changes to the widget (visual, data, or configuration)
+- Only include properties that need to be changed in the preferences object
 - Preserve existing preferences unless explicitly asked to change them
-- Use the same widget type unless asked to change it
-- For color changes, update preferences.backgroundColor with the new hex color`;
+- Keep the widget type as is unless specifically asked to change it
+- If updating visual properties, include them in preferences (e.g. backgroundColor)
+- If updating data configuration, include it in preferences (e.g. soql_query for Salesforce)`;
   }
 
   basePrompt += `\n\nRespond in the following JSON format:
@@ -96,7 +96,6 @@ When using the update_widget tool:
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       headers: {
@@ -109,10 +108,8 @@ serve(async (req) => {
   try {
     const { messages, currentWidget } = await req.json();
     
-    // Generate system prompt with current widget context if editing
     const systemPrompt = generateSystemPrompt(currentWidget);
     
-    // Call AI model with system prompt and messages
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -139,26 +136,6 @@ serve(async (req) => {
     const toolCall = JSON.parse(aiResponse.choices[0].message.content);
     console.log('Tool Call:', toolCall);
 
-    // Special handling for color change commands
-    if (currentWidget && messages[messages.length - 1].content.match(/change (?:background|color) to (#[0-9A-Fa-f]{6})/i)) {
-      const colorMatch = messages[messages.length - 1].content.match(/change (?:background|color) to (#[0-9A-Fa-f]{6})/i);
-      const newColor = colorMatch[1];
-      
-      return new Response(JSON.stringify({
-        tool: 'update_widget',
-        message: `Updating widget background color to ${newColor}`,
-        widgetConfig: {
-          preferences: {
-            ...currentWidget.preferences,
-            backgroundColor: newColor
-          }
-        }
-      }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Return the tool call response
     return new Response(JSON.stringify({
       message: aiResponse.choices[0].message.content,
       tool: toolCall.tool,
@@ -171,7 +148,7 @@ serve(async (req) => {
     console.error('Error in AI agent:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' }
     });
   }
 });
