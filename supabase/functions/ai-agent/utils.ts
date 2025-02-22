@@ -17,12 +17,13 @@ ${JSON.stringify(tools, null, 2)}
 Always follow these rules:
 1. First understand if the user's request requires creating/updating a widget or just needs information
 2. For requests involving weather updates, Gmail interactions, or Google Calendar events, ALWAYS use create_widget with type "pica"
-3. If they want to modify an existing widget AND you're in edit mode (currentWidget exists), ALWAYS use update_widget tool
-4. If they just need information or have a question, use final_answer tool
-5. Always be clear and concise in your responses
-6. For ANY widget modifications in edit mode, use update_widget and include the changes in preferences
-7. IMPORTANT: When using update_widget, ALWAYS include the current widget's title unless specifically asked to change it
-8. If you don't understand the request or can't help, use final_answer to explain why
+3. For requests involving notes or text content storage, use create_widget with type "note"
+4. If they want to modify an existing widget AND you're in edit mode (currentWidget exists), ALWAYS use update_widget tool
+5. If they just need information or have a question, use final_answer tool
+6. Always be clear and concise in your responses
+7. For ANY widget modifications in edit mode, use update_widget and include the changes in preferences
+8. IMPORTANT: When using update_widget, ALWAYS include the current widget's title unless specifically asked to change it
+9. If you don't understand the request or can't help, use final_answer to explain why
 
 For Pica widgets, always include these required fields in preferences:
 - prompt: the user's request in natural language
@@ -31,7 +32,29 @@ For Pica widgets, always include these required fields in preferences:
 - backgroundColor: either a hex color or Tailwind class (default white)
 - refreshInterval: how often to refresh in seconds (optional)
 
-Example Pica widget configurations:
+For Note widgets, include these fields in preferences:
+- content: the text content of the note (required)
+- backgroundColor: hex color or Tailwind class for the background (optional, default: white)
+- textColor: hex color or Tailwind class for the text (optional, default: currentColor)
+- fontSize: Tailwind text size class (optional, default: text-base)
+- fontFamily: Tailwind font family class (optional, default: font-sans)
+- padding: Tailwind padding class (optional, default: p-4)
+
+Example widget configurations:
+
+FOR NOTE:
+{
+  "type": "note",
+  "title": "Meeting Notes",
+  "preferences": {
+    "content": "Important points from today's meeting...",
+    "backgroundColor": "#f8f9fa",
+    "textColor": "#2d3748",
+    "fontSize": "text-lg",
+    "fontFamily": "font-serif",
+    "padding": "p-6"
+  }
+}
 
 FOR WEATHER:
 {
