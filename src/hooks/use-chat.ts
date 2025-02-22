@@ -73,38 +73,59 @@ export const useChat = (onCommand: (command: string) => void) => {
         try {
           let result;
           if (tool === 'update_widget' && editingWidgetId && currentWidgetData) {
-            // Merge the new preferences with existing ones
+            console.log('Current widget data:', currentWidgetData);
+            console.log('New widget config:', widgetConfig);
+            
+            // Merge preferences carefully
             const updatedPreferences = {
-              ...currentWidgetData.preferences,
-              ...(widgetConfig.preferences || {})
+              ...currentWidgetData.preferences || {},
+              ...widgetConfig.preferences || {}
             };
 
-            // Merge all widget data, preserving existing fields unless explicitly changed
-            const updatedWidget = {
-              ...currentWidgetData,
-              ...widgetConfig,
+            console.log('Merged preferences:', updatedPreferences);
+
+            // Prepare update data while preserving existing fields
+            const updateData = {
+              title: widgetConfig.title || currentWidgetData.title,
               preferences: updatedPreferences,
-              updated_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             };
 
+            console.log('Final update data:', updateData);
+
+            // Perform the update
             result = await supabase
               .from('widgets')
-              .update(updatedWidget)
-              .eq('id', editingWidgetId);
+              .update(updateData)
+              .eq('id', editingWidgetId)
+              .select();
 
-            if (result.error) throw result.error;
+            console.log('Update result:', result);
+
+            if (result.error) {
+              console.error('Database update error:', result.error);
+              throw result.error;
+            }
             toast.success('Widget updated successfully!');
           } else {
             const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+              throw new Error('No authenticated user found');
+            }
+
             result = await supabase
               .from('widgets')
               .insert({
                 ...widgetConfig,
-                user_id: user?.id,
+                user_id: user.id,
                 created_at: new Date().toISOString(),
-              });
+              })
+              .select();
 
-            if (result.error) throw result.error;
+            if (result.error) {
+              console.error('Database insert error:', result.error);
+              throw result.error;
+            }
             toast.success('Widget created successfully!');
           }
           
