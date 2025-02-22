@@ -36,29 +36,46 @@ const Index = () => {
   const handleCommand = async (command: string) => {
     console.log("Received command:", command);
     
-    // Basic command parsing
-    if (command.toLowerCase().includes('salesforce tasks')) {
+    const lowerCommand = command.toLowerCase();
+    
+    // Parse Salesforce tasks command
+    if (lowerCommand.includes('salesforce tasks')) {
       const preferences = {
-        color: command.includes('light blue') ? 'bg-[#D3E4FD]' : undefined,
-        emojis: command.toLowerCase().includes('emoji'),
+        // Extract color preference
+        color: lowerCommand.includes('light blue') ? 'bg-[#D3E4FD]' : 
+               lowerCommand.includes('blue') ? 'bg-blue-100' :
+               undefined,
+        // Check for emoji preference
+        emojis: lowerCommand.includes('emoji') || 
+                lowerCommand.includes('emojis') || 
+                lowerCommand.includes('funny'),
       };
 
-      // Create new widget in Supabase
-      const { error } = await supabase
-        .from('widgets')
-        .insert({
-          type: 'salesforce-tasks',
-          title: 'My Salesforce Tasks',
-          preferences,
-          created_at: new Date().toISOString(),
-        });
+      try {
+        // Insert the widget configuration into Supabase
+        const { error } = await supabase
+          .from('widgets')
+          .insert({
+            user_id: user?.id,
+            type: 'salesforce-tasks',
+            title: 'My Salesforce Tasks',
+            preferences,
+            created_at: new Date().toISOString(),
+          });
 
-      if (error) {
+        if (error) {
+          console.error('Error creating widget:', error);
+          toast.error('Failed to create widget');
+          return;
+        }
+
+        toast.success('Widget added to dashboard!');
+      } catch (error) {
+        console.error('Error creating widget:', error);
         toast.error('Failed to create widget');
-        return;
       }
-
-      toast.success('Widget added to dashboard!');
+    } else {
+      toast.info('Command not recognized. Try asking for Salesforce tasks!');
     }
   };
 
