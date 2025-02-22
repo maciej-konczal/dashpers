@@ -7,13 +7,17 @@ import { streamText } from "npm:ai";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Content-Type': 'application/json'
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Content-Type': 'application/json',
 };
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    });
   }
 
   try {
@@ -56,7 +60,20 @@ serve(async (req) => {
     });
 
     console.log('Stream created successfully');
-    return stream.toDataStreamResponse();
+    
+    // Get the response from the stream
+    const response = stream.toDataStreamResponse();
+    
+    // Add CORS headers to the response
+    const headers = new Headers(response.headers);
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      headers.set(key, value);
+    });
+    
+    return new Response(response.body, {
+      status: response.status,
+      headers: headers,
+    });
 
   } catch (error) {
     console.error('Detailed error in pica-agent:', {
