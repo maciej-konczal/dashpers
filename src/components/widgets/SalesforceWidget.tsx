@@ -74,6 +74,18 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
     );
   };
 
+  const renderContent = () => {
+    if (!salesforceData) return null;
+
+    switch (chart_type) {
+      case 'table':
+        return renderTableView(salesforceData);
+      // Add more chart types here as needed
+      default:
+        return renderTableView(salesforceData);
+    }
+  };
+
   return (
     <Card className={`widget ${backgroundColor} border-none`}>
       <CardHeader>
