@@ -112,7 +112,12 @@ const Index = () => {
         <Button onClick={handleLogout}>Logout</Button>
       </div>
       <div className="flex">
-        <ChatPanel onCommand={handleCommand} editingWidgetId={editingWidgetId} />
+        <ChatPanel 
+          onCommand={handleCommand} 
+          editingWidgetId={editingWidgetId}
+          isOpen={isChatOpen}
+          setIsOpen={setIsChatOpen}
+        />
         <main className={`flex-1 transition-all duration-300 ${isChatOpen ? 'ml-[320px]' : 'ml-0'}`}>
           <Dashboard 
             onEditWidget={handleEditWidget} 

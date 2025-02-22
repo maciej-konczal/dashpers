@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowLeftFromLine, Pencil } from 'lucide-react';
 import { ChatMessages } from './chat/ChatMessages';
@@ -7,8 +7,17 @@ import { ChatInput } from './chat/ChatInput';
 import { useChat } from '@/hooks/use-chat';
 import { ChatPanelProps } from '@/types/chat';
 
-export const ChatPanel: React.FC<ChatPanelProps> = ({ onCommand, editingWidgetId }) => {
-  const [isOpen, setIsOpen] = useState(true);
+interface ExtendedChatPanelProps extends ChatPanelProps {
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
+}
+
+export const ChatPanel: React.FC<ExtendedChatPanelProps> = ({ 
+  onCommand, 
+  editingWidgetId, 
+  isOpen, 
+  setIsOpen 
+}) => {
   const { messages, isProcessing, input, setInput, handleSubmit } = useChat((command: string) => {
     if (editingWidgetId) return;
     onCommand(command);
