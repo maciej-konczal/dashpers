@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChatPanel } from '@/components/ChatPanel';
@@ -13,6 +14,12 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2 } from 'lucide-react';
 import { useWidgetStore } from '@/stores/widgetStore';
+import { fal } from '@fal-ai/client';
+
+// Configure fal client
+fal.config({
+  credentials: import.meta.env.VITE_FAL_KEY,
+});
 
 const Index = () => {
   const navigate = useNavigate();
@@ -57,23 +64,22 @@ const Index = () => {
         .map(w => `${w.title} (${w.type}):\n${w.content}`)
         .join('\n\n');
 
-      const messages = [{
-        role: 'user',
-        content: `Please provide a concise summary of these widget contents:\n\n${formattedContent}`
-      }];
-
-      const { data, error } = await supabase.functions.invoke('ai-agent', {
-        body: { 
-          messages,
-          currentWidget: null
+      const result = await fal.subscribe("fal-ai/any-llm", {
+        input: {
+          model: "anthropic/claude-3-sonnet",
+          prompt: `Please provide a concise summary of these widget contents:\n\n${formattedContent}`,
+        },
+        logs: true,
+        onQueueUpdate: (update) => {
+          console.log('Queue update:', update);
         }
       });
 
-      if (error) {
-        throw error;
+      if (!result.data?.output) {
+        throw new Error('No output received from AI');
       }
 
-      setSummary(data.message);
+      setSummary(result.data.output);
     } catch (error) {
       console.error('Error generating summary:', error);
       toast.error('Failed to generate summary');
