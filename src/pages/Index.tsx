@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChatPanel } from '@/components/ChatPanel';
@@ -5,7 +6,7 @@ import { Dashboard } from '@/components/Dashboard';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Volume2 } from 'lucide-react';
 import { useWidgetStore } from '@/stores/widgetStore';
 import { SummaryDialog } from '@/components/SummaryDialog';
 
@@ -18,6 +19,7 @@ const Index = () => {
   const [summary, setSummary] = useState<string>('');
   const [showSummary, setShowSummary] = useState(false);
   const widgetContents = useWidgetStore((state) => state.contents);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -133,6 +135,57 @@ const Index = () => {
     }
   };
 
+  const summarizeAndListen = async () => {
+    setIsSummarizing(true);
+    setIsGeneratingAudio(true);
+    setSummary('');
+    setShowSummary(true);
+    
+    try {
+      // First, generate the summary
+      const formattedContent = widgetContents
+        .map(formatWidgetContent)
+        .join('\n\n---\n\n');
+
+      const { data: summaryData, error: summaryError } = await supabase.functions.invoke('summarize-widgets', {
+        body: { content: formattedContent }
+      });
+
+      if (summaryError) throw summaryError;
+      if (!summaryData?.summary) throw new Error('No summary generated');
+
+      setSummary(summaryData.summary);
+
+      // Then, generate the audio
+      const { data: audioData, error: audioError } = await supabase.functions.invoke('text-to-speech', {
+        body: { text: summaryData.summary }
+      });
+
+      if (audioError) throw audioError;
+      if (!audioData?.audioContent) throw new Error('No audio content received');
+
+      // Play the audio
+      const audioBlob = new Blob(
+        [Uint8Array.from(atob(audioData.audioContent), c => c.charCodeAt(0))],
+        { type: 'audio/mp3' }
+      );
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.error('Error in summarize and listen:', error);
+      toast.error('Failed to generate audio summary');
+    } finally {
+      setIsSummarizing(false);
+      setIsGeneratingAudio(false);
+    }
+  };
+
   const handleCommand = async (command: string) => {
     console.log("Received command:", command);
     
@@ -208,9 +261,33 @@ const Index = () => {
           <Button 
             variant="outline"
             onClick={summarizeWidgets}
-            disabled={widgetContents.length === 0}
+            disabled={widgetContents.length === 0 || isSummarizing}
           >
-            Summarize Widgets
+            {isSummarizing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Summarizing...
+              </>
+            ) : (
+              'Summarize Widgets'
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={summarizeAndListen}
+            disabled={widgetContents.length === 0 || isSummarizing || isGeneratingAudio}
+          >
+            {isGeneratingAudio ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating Audio...
+              </>
+            ) : (
+              <>
+                <Volume2 className="mr-2 h-4 w-4" />
+                Listen to Summary
+              </>
+            )}
           </Button>
           <Button onClick={handleLogout}>Logout</Button>
         </div>
