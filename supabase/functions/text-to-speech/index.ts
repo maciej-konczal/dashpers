@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,13 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voice } = await req.json()
+    const { text } = await req.json()
     
     if (!text) {
       throw new Error('Text is required')
     }
 
-    const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + voice, {
+    // Using George's voice ID by default
+    const voiceId = 'JBFqnCBsd6RMkjVDRZzb';
+
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
       headers: {
         'Accept': 'audio/mpeg',
@@ -34,30 +36,33 @@ serve(async (req) => {
           similarity_boost: 0.5,
         }
       }),
-    })
+    });
 
     if (!response.ok) {
-      throw new Error('Failed to generate speech')
+      const errorData = await response.text();
+      console.error('ElevenLabs API error:', errorData);
+      throw new Error('Failed to generate speech: ' + errorData);
     }
 
-    const arrayBuffer = await response.arrayBuffer()
+    const arrayBuffer = await response.arrayBuffer();
     const base64Audio = btoa(
       String.fromCharCode(...new Uint8Array(arrayBuffer))
-    )
+    );
 
     return new Response(
       JSON.stringify({ audioContent: base64Audio }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
-    )
+    );
   } catch (error) {
+    console.error('Text-to-speech error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
-    )
+    );
   }
-})
+});

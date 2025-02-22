@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, Volume2, VolumeX } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 interface SummaryDialogProps {
   open: boolean;
@@ -26,6 +27,7 @@ export const SummaryDialog: React.FC<SummaryDialogProps> = ({
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
 
   const handleTextToSpeech = async () => {
     try {
@@ -36,18 +38,23 @@ export const SummaryDialog: React.FC<SummaryDialogProps> = ({
         return;
       }
 
+      setIsLoadingAudio(true);
+
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
-        body: { 
-          text: summary,
-          voice: 'Aria', // Using Aria voice by default
-        },
+        body: { text: summary }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
 
-      const audioContent = data.audioContent;
+      if (!data?.audioContent) {
+        throw new Error('No audio content received');
+      }
+
       const audioBlob = new Blob(
-        [Uint8Array.from(atob(audioContent), c => c.charCodeAt(0))],
+        [Uint8Array.from(atob(data.audioContent), c => c.charCodeAt(0))],
         { type: 'audio/mp3' }
       );
       
@@ -56,6 +63,7 @@ export const SummaryDialog: React.FC<SummaryDialogProps> = ({
       
       newAudio.onended = () => {
         setIsPlaying(false);
+        URL.revokeObjectURL(audioUrl);
       };
 
       setAudio(newAudio);
@@ -63,6 +71,9 @@ export const SummaryDialog: React.FC<SummaryDialogProps> = ({
       setIsPlaying(true);
     } catch (error) {
       console.error('Text-to-speech error:', error);
+      toast.error('Failed to generate speech. Please try again.');
+    } finally {
+      setIsLoadingAudio(false);
     }
   };
 
@@ -81,9 +92,12 @@ export const SummaryDialog: React.FC<SummaryDialogProps> = ({
               variant="outline"
               size="icon"
               onClick={handleTextToSpeech}
+              disabled={isLoadingAudio}
               className="ml-4"
             >
-              {isPlaying ? (
+              {isLoadingAudio ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isPlaying ? (
                 <VolumeX className="h-4 w-4" />
               ) : (
                 <Volume2 className="h-4 w-4" />
