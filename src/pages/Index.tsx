@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChatPanel } from '@/components/ChatPanel';
@@ -54,41 +53,23 @@ const Index = () => {
     setShowSummary(true);
     
     try {
-      // Get the FAL AI key from Supabase function
-      const { data: { key: falKey }, error: keyError } = await supabase.functions.invoke('ai-agent', {
-        body: { action: 'get-fal-key' }
-      });
-
-      if (keyError || !falKey) {
-        throw new Error('Failed to get FAL AI key');
-      }
-
-      // Configure fal client with the key from Supabase
-      fal.config({
-        credentials: falKey,
-      });
-
-      // Format the content for the summary
       const formattedContent = widgetContents
         .map(w => `${w.title} (${w.type}):\n${w.content}`)
         .join('\n\n');
 
-      const result = await fal.subscribe("fal-ai/any-llm", {
-        input: {
-          model: "anthropic/claude-3.5-sonnet",
-          prompt: `Please provide a concise summary of these widget contents:\n\n${formattedContent}`,
-        },
-        logs: true,
-        onQueueUpdate: (update) => {
-          console.log('Queue update:', update);
-        }
+      const { data, error } = await supabase.functions.invoke('summarize-widgets', {
+        body: { content: formattedContent }
       });
 
-      if (!result.data?.output) {
-        throw new Error('No output received from AI');
+      if (error) {
+        throw error;
       }
 
-      setSummary(result.data.output);
+      if (!data?.summary) {
+        throw new Error('No summary generated');
+      }
+
+      setSummary(data.summary);
     } catch (error) {
       console.error('Error generating summary:', error);
       toast.error('Failed to generate summary');
