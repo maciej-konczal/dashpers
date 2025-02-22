@@ -77,9 +77,11 @@ async function getCurrentUserId(auth: SalesforceAuth): Promise<string> {
 }
 
 async function executeSalesforceQuery(auth: SalesforceAuth, query: string) {
-  console.log('Executing Salesforce query:', query);
+  const cleanQuery = query.replace(/\s+/g, ' ').trim();
+  console.log('Executing Salesforce query:', cleanQuery);
+  
   try {
-    const response = await fetch(`${auth.instance_url}/services/data/v57.0/query/?q=${encodeURIComponent(query)}`, {
+    const response = await fetch(`${auth.instance_url}/services/data/v57.0/query/?q=${encodeURIComponent(cleanQuery)}`, {
       headers: {
         'Authorization': `Bearer ${auth.access_token}`,
       },
@@ -125,8 +127,11 @@ serve(async (req) => {
       throw new Error('No query provided in request body');
     }
 
-    // Replace any :currentUserId placeholder with the actual user ID
-    const query = body.query.replace(':currentUserId', `'${userId}'`);
+    // Clean up the query string and replace currentUserId
+    const query = body.query
+      .replace(/\s+/g, ' ')  // Replace multiple whitespace with single space
+      .trim()  // Remove leading/trailing whitespace
+      .replace(':currentUserId', `'${userId}'`);
     
     // Add LIMIT clause if not present and maxRecords is specified
     const maxRecords = body.maxRecords || 10;
@@ -134,7 +139,7 @@ serve(async (req) => {
       ? query 
       : `${query} LIMIT ${maxRecords}`;
     
-    console.log('Executing query:', finalQuery);
+    console.log('Final query:', finalQuery);
     const data = await executeSalesforceQuery(auth, finalQuery);
     
     return new Response(JSON.stringify(data), {
