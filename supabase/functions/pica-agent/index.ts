@@ -24,7 +24,7 @@ serve(async (req) => {
     console.log('Preparing chat request to Pica API');
     
     // Make direct API call since the SDK isn't compatible with Deno
-    const response = await fetch('https://chat.pica.io/v1/chat', {
+    const response = await fetch('https://api.pica.io/v1/chat', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${pica_key}`,
@@ -56,7 +56,8 @@ serve(async (req) => {
       name: error.name,
       message: error.message,
       stack: error.stack,
-      cause: error.cause
+      cause: error.cause,
+      type: typeof error
     });
     
     return new Response(JSON.stringify({ 
