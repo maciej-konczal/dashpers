@@ -14,8 +14,8 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, tool, maxSteps = 5 } = await req.json();
-    console.log('Received request with params:', { prompt, tool, maxSteps });
+    const { prompt, maxSteps = 20 } = await req.json();
+    console.log('Received request with params:', { prompt, maxSteps });
 
     const pica_key = Deno.env.get('PICA_SECRET_KEY');
     if (!pica_key) {
@@ -23,9 +23,11 @@ serve(async (req) => {
     }
     console.log('PICA_SECRET_KEY found with length:', pica_key.length);
 
+    // Following Pica's official format
     const requestBody = {
+      model: "gpt-4",
       messages: [{ role: 'user', content: prompt }],
-      tool: tool,
+      tools: "pica.oneTool", // Using the oneTool as specified
       maxSteps: maxSteps
     };
     console.log('Preparing request body:', JSON.stringify(requestBody, null, 2));
