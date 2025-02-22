@@ -104,7 +104,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="flex justify-end p-4">
+      <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl font-bold">AI</span>
+          <span className="text-2xl font-['Roboto'] text-primary">-pers</span>
+        </div>
         <Button onClick={handleLogout}>Logout</Button>
       </div>
       <ChatPanel onCommand={handleCommand} editingWidgetId={editingWidgetId} />
