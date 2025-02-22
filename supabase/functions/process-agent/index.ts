@@ -75,28 +75,27 @@ serve(async (req) => {
   try {
     const { messages } = await req.json();
 
-    // Format messages for the API
-    const formattedMessages = [
-      { role: 'system', content: systemPrompt },
-      ...messages.map(({ role, content }: { role: string; content: string }) => ({
-        role,
-        content
-      }))
-    ];
+    // Format the conversation for the any-llm endpoint
+    const conversation = messages.map(({ role, content }: { role: string; content: string }) => {
+      if (role === 'system') return content;
+      return role === 'user' ? `Human: ${content}` : `Assistant: ${content}`;
+    }).join('\n');
 
-    // Call fal.ai API with the correct endpoint and parameters
-    const response = await fetch('https://rest.fal.ai/v1/chat', {
+    const prompt = `${systemPrompt}\n\n${conversation}\n\nHuman: ${messages[messages.length - 1].content}\n\nAssistant:`;
+
+    // Call fal.ai API with the any-llm endpoint
+    const response = await fetch('https://rest.fal.ai/v1/models/fal-ai/any-llm', {
       method: 'POST',
       headers: {
         'Authorization': `Key ${FAL_AI_KEY}`,
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        messages: formattedMessages,
-        functions: tools.map(t => t.function),
-        model: 'claude-3-opus',
-        stream: false
+        input: {
+          model: "anthropic/claude-3-sonnet",
+          prompt: prompt,
+          functions: tools.map(t => t.function)
+        }
       })
     });
 
@@ -108,14 +107,20 @@ serve(async (req) => {
     console.log('Fal.ai Response:', data);
 
     let widgetConfig = null;
-    let finalMessage = data.content;
+    let finalMessage = data.output;
 
-    // Parse function calls if any
-    if (data.function_calls && data.function_calls.length > 0) {
-      for (const functionCall of data.function_calls) {
-        if (functionCall.name === 'generate_widget_config') {
-          widgetConfig = JSON.parse(functionCall.arguments);
+    // Check for function calls in the response
+    const functionCallMatch = data.output.match(/\{[\s\S]*\}/);
+    if (functionCallMatch) {
+      try {
+        const functionCallData = JSON.parse(functionCallMatch[0]);
+        if (functionCallData.type && functionCallData.title) {
+          widgetConfig = functionCallData;
+          // Remove the function call JSON from the message
+          finalMessage = data.output.replace(functionCallMatch[0], '').trim();
         }
+      } catch (e) {
+        console.error('Error parsing function call:', e);
       }
     }
 
