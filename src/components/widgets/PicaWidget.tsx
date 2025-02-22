@@ -78,7 +78,10 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
           </div>
         ) : error ? (
           <div className="text-red-500">
-            Error: {error}
+            <div>Error: {error}</div>
+            {error.includes('Service not available') && (
+              <div className="mt-2 text-sm">Do you wanna fund us? 😊</div>
+            )}
           </div>
         ) : (
           <div className="prose">
@@ -91,3 +94,4 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
     </Card>
   );
 };
+

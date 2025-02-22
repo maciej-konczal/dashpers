@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -149,7 +148,10 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
           
           {error && (
             <div className="text-red-500">
-              Error: {error instanceof Error ? error.message : 'An error occurred'}
+              <div>Error: {error instanceof Error ? error.message : 'An error occurred'}</div>
+              {error instanceof Error && error.message.includes('Service not available') && (
+                <div className="mt-2 text-sm">Do you wanna fund us? 😊</div>
+              )}
             </div>
           )}
 
