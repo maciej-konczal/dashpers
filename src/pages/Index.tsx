@@ -5,15 +5,9 @@ import { Dashboard } from '@/components/Dashboard';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { Loader2 } from 'lucide-react';
 import { useWidgetStore } from '@/stores/widgetStore';
+import { SummaryDialog } from '@/components/SummaryDialog';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -26,7 +20,6 @@ const Index = () => {
   const widgetContents = useWidgetStore((state) => state.contents);
 
   useEffect(() => {
-    // Check current auth status
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         navigate('/auth');
@@ -35,7 +28,6 @@ const Index = () => {
       }
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) {
         navigate('/auth');
@@ -52,21 +44,17 @@ const Index = () => {
     let content = widget.content;
     
     try {
-      // Log raw content before processing
       console.log('Raw widget content:', { type: widget.type, content });
       
       if (widget.type === 'note') {
-        // Handle note widget - use content directly
         console.log('Processing note widget');
         return `${widget.title} (${widget.type}):\n${content}`;
       }
 
-      // For other types, try to parse JSON
       const parsedContent = JSON.parse(content);
       console.log('Parsed content:', { type: widget.type, parsedContent });
       
       if (widget.type === 'salesforce') {
-        // Handle Salesforce widget data
         console.log('Processing Salesforce widget');
         if (Array.isArray(parsedContent)) {
           content = parsedContent.map(record => 
@@ -76,13 +64,11 @@ const Index = () => {
           ).join('\n');
         }
       } else if (widget.type === 'calendar') {
-        // Handle Calendar widget data
         console.log('Processing calendar widget');
         content = parsedContent.events?.map((event: any) => 
           `Event: "${event.title}" on ${event.date} at ${event.time}`
         ).join('\n') || content;
       } else if (widget.type === 'weather') {
-        // Handle Weather widget data
         console.log('Processing weather widget');
         const weather = parsedContent;
         content = [
@@ -95,7 +81,6 @@ const Index = () => {
         ].filter(Boolean).join('\n');
       }
     } catch (e) {
-      // If parsing fails, use the content as is
       console.log('Content parsing failed for widget', {
         title: widget.title,
         type: widget.type,
@@ -115,17 +100,15 @@ const Index = () => {
     setShowSummary(true);
     
     try {
-      // Log all widgets before processing
       console.log('All widgets to process:', widgetContents.map(w => ({
         type: w.type,
         title: w.title,
         hasContent: Boolean(w.content)
       })));
 
-      // Format all widgets with proper type handling
       const formattedContent = widgetContents
         .map(formatWidgetContent)
-        .join('\n\n---\n\n'); // Clear separation between widgets
+        .join('\n\n---\n\n');
 
       console.log('Final formatted content for summary:', formattedContent);
 
@@ -155,21 +138,17 @@ const Index = () => {
     
     const lowerCommand = command.toLowerCase();
     
-    // Parse Salesforce tasks command
     if (lowerCommand.includes('salesforce tasks')) {
       const preferences = {
-        // Extract color preference
         color: lowerCommand.includes('light blue') ? 'bg-[#D3E4FD]' : 
                lowerCommand.includes('blue') ? 'bg-blue-100' :
                undefined,
-        // Check for emoji preference
         emojis: lowerCommand.includes('emoji') || 
                 lowerCommand.includes('emojis') || 
                 lowerCommand.includes('funny'),
       };
 
       try {
-        // Insert the widget configuration into Supabase
         const { error } = await supabase
           .from('widgets')
           .insert({
@@ -252,27 +231,12 @@ const Index = () => {
         </main>
       </div>
 
-      <Dialog open={showSummary} onOpenChange={setShowSummary}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Widgets Summary</DialogTitle>
-            <DialogDescription>
-              A comprehensive overview of all your widgets
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-4">
-            {isSummarizing ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin" />
-              </div>
-            ) : (
-              <div className="prose max-w-none whitespace-pre-wrap overflow-y-auto max-h-[60vh]">
-                {summary || "No summary available"}
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <SummaryDialog
+        open={showSummary}
+        onOpenChange={setShowSummary}
+        summary={summary}
+        isSummarizing={isSummarizing}
+      />
     </div>
   );
 };
