@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
-const FAL_AI_KEY = Deno.env.get('FAL_AI_KEY');
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -84,30 +84,33 @@ serve(async (req) => {
       }))
     ];
 
-    // Call fal.ai API
-    const response = await fetch('https://rest.fal.ai/fal/claude-instant/completion', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Key ${FAL_AI_KEY}`,
+        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
+        model: 'gpt-4o-mini',
         messages: formattedMessages,
         tools,
-        temperature: 0.7,
-        stream: false
-      })
+        tool_choice: 'auto',
+      }),
     });
 
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+    }
+
     const data = await response.json();
-    console.log('AI Response:', data);
+    console.log('OpenAI Response:', data);
 
     let widgetConfig = null;
-    let finalMessage = data.content;
+    let finalMessage = data.choices[0].message.content;
 
     // Parse tool calls if any
-    if (data.tool_calls && data.tool_calls.length > 0) {
-      for (const toolCall of data.tool_calls) {
+    if (data.choices[0].message.tool_calls) {
+      for (const toolCall of data.choices[0].message.tool_calls) {
         if (toolCall.function.name === 'generate_widget_config') {
           widgetConfig = JSON.parse(toolCall.function.arguments);
         }
