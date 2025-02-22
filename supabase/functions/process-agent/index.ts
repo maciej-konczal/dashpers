@@ -1,70 +1,33 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { fal } from "npm:@fal-ai/client";
 
 const FAL_AI_KEY = Deno.env.get('FAL_AI_KEY');
+
+// Configure fal client
+fal.config({
+  credentials: FAL_AI_KEY,
+});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-type Tool = {
-  type: 'function';
-  function: {
-    name: string;
-    description: string;
-    parameters: {
-      type: string;
-      properties: Record<string, any>;
-      required: string[];
-    };
-  };
-};
-
-const tools: Tool[] = [
-  {
-    type: 'function',
-    function: {
-      name: 'generate_widget_config',
-      description: 'Generate a widget configuration based on user requirements',
-      parameters: {
-        type: 'object',
-        properties: {
-          type: {
-            type: 'string',
-            description: 'Type of widget to create',
-            enum: ['salesforce-tasks', 'slack-notifications', 'sample']
-          },
-          title: {
-            type: 'string',
-            description: 'Title of the widget'
-          },
-          preferences: {
-            type: 'object',
-            description: 'Widget preferences like color and styling',
-            properties: {
-              color: { type: 'string' },
-              emojis: { type: 'boolean' }
-            }
-          }
-        },
-        required: ['type', 'title']
-      }
-    }
-  }
-];
-
 const systemPrompt = `You are a helpful dashboard assistant that helps users create and manage widgets. 
-You have access to these tools:
-1. generate_widget_config: Use this to create widget configurations based on user requirements
+When a user asks to create a widget, respond with a JSON object in this format:
+{
+  "type": "sample",
+  "title": "Widget Title",
+  "preferences": {
+    "color": "bg-[#D3E4FD]",
+    "emojis": true
+  }
+}
 
-Follow these steps for each user request:
-1. Understand if they want to create/modify a widget
-2. If they do, use generate_widget_config to create appropriate configuration
-3. Provide a friendly response explaining what you did
-
-Be concise but friendly in your responses.`;
+The type must be one of: "salesforce-tasks", "sample"
+Keep your responses friendly but concise.`;
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -75,7 +38,7 @@ serve(async (req) => {
   try {
     const { messages } = await req.json();
 
-    // Format the conversation for the any-llm endpoint
+    // Format the conversation
     const conversation = messages.map(({ role, content }: { role: string; content: string }) => {
       if (role === 'system') return content;
       return role === 'user' ? `Human: ${content}` : `Assistant: ${content}`;
@@ -83,34 +46,24 @@ serve(async (req) => {
 
     const prompt = `${systemPrompt}\n\n${conversation}\n\nHuman: ${messages[messages.length - 1].content}\n\nAssistant:`;
 
-    console.log('Sending request to fal.ai...');
+    console.log('Starting fal.ai request with prompt:', prompt);
 
-    // Call fal.ai REST API directly
-    const response = await fetch('https://preview.fal.ai/models/anthropic/claude-3-sonnet/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Key ${FAL_AI_KEY}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+    // Use fal.ai client with subscribe method
+    const result = await fal.subscribe("fal-ai/any-llm", {
+      input: {
+        model: "anthropic/claude-3-sonnet",
+        prompt: prompt,
       },
-      body: JSON.stringify({
-        prompt,
-        stream: false,
-        max_tokens: 1000
-      })
+      logs: true,
+      onQueueUpdate: (update) => {
+        console.log('Queue update:', update);
+      }
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Fal.ai error response:', errorText);
-      throw new Error(`fal.ai API error: ${response.status} ${response.statusText} - ${errorText}`);
-    }
+    console.log('Fal.ai Response:', result);
 
-    const data = await response.json();
-    console.log('Fal.ai Response:', data);
-
-    const assistantResponse = data.response || data.output || '';
-
+    const assistantResponse = result.response || '';
+    
     let widgetConfig = null;
     let finalMessage = assistantResponse;
 
