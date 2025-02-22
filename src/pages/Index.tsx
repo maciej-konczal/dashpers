@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChatPanel } from '@/components/ChatPanel';
@@ -103,7 +104,7 @@ const Index = () => {
       </div>
       <ChatPanel onCommand={handleCommand} editingWidgetId={editingWidgetId} />
       <main className="pl-0 transition-all duration-300">
-        <Dashboard onEditWidget={handleEditWidget} />
+        <Dashboard onEditWidget={handleEditWidget} editingWidgetId={editingWidgetId} />
       </main>
     </div>
   );
