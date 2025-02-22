@@ -86,36 +86,34 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
   };
 
   return (
-    <div className={`rounded-lg ${backgroundColor}`}>
-      <Card className="widget border-none bg-transparent">
-        <CardHeader>
-          <CardTitle>{config.title || 'Salesforce Data'}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading && (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-          )}
-          
-          {error && (
-            <p className="text-red-500">Error loading data: {error.message}</p>
-          )}
+    <Card className={`${backgroundColor}!important widget border-none`}>
+      <CardHeader>
+        <CardTitle>{config.title || 'Salesforce Data'}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading && (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
+        )}
+        
+        {error && (
+          <p className="text-red-500">Error loading data: {error.message}</p>
+        )}
 
-          {salesforceData && (
-            <>
-              {show_totals && (
-                <div className="mb-4 text-sm text-gray-600">
-                  Total records: {salesforceData.length}
-                </div>
-              )}
-              <div className="overflow-x-auto">
-                {renderContent()}
+        {salesforceData && (
+          <>
+            {show_totals && (
+              <div className="mb-4 text-sm text-gray-600">
+                Total records: {salesforceData.length}
               </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+            )}
+            <div className="overflow-x-auto">
+              {renderContent()}
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 };
