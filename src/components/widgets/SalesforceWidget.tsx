@@ -150,7 +150,7 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
             <div className="text-red-500">
               <div>Error: {error instanceof Error ? error.message : 'An error occurred'}</div>
               {error instanceof Error && error.message.includes('Service not available') && (
-                <div className="mt-2 text-sm">Do you wanna fund us? 😊</div>
+                <div className="mt-2 text-sm">Do you wanna help us? 😊</div>
               )}
             </div>
           )}

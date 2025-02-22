@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { WidgetConfig } from '@/types/widgets';
@@ -80,7 +79,7 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
           <div className="text-red-500">
             <div>Error: {error}</div>
             {error.includes('Service not available') && (
-              <div className="mt-2 text-sm">Do you wanna fund us? 😊</div>
+              <div className="mt-2 text-sm">Do you wanna help us? 😊</div>
             )}
           </div>
         ) : (
@@ -94,4 +93,3 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
     </Card>
   );
 };
-
