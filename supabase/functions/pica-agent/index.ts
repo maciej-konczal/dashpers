@@ -54,35 +54,76 @@ serve(async (req) => {
     console.log('Generated system prompt');
 
     try {
-      // Create the stream with a callback to handle chunks
       let fullText = '';
+      let isComplete = false;
       
-      await streamText({
-        model: openai("gpt-4o"),
-        system,
-        tools: {
-          ...pica.oneTool,
-        },
-        messages: formattedMessages,
-        maxSteps: body.maxSteps || 20,
-        onTextContent: (content: string) => {
-          console.log('Received chunk:', content);
-          fullText += content;
-        },
+      console.log('Starting streamText...');
+
+      const streamPromise = new Promise((resolve, reject) => {
+        let timeout = setTimeout(() => {
+          reject(new Error('Stream timeout after 30 seconds'));
+        }, 30000);
+
+        streamText({
+          model: openai("gpt-4o"),
+          system,
+          tools: {
+            ...pica.oneTool,
+          },
+          messages: formattedMessages,
+          maxSteps: body.maxSteps || 20,
+          onTextContent: (content: string) => {
+            console.log('Received chunk length:', content.length);
+            console.log('Chunk preview:', content.substring(0, 50));
+            fullText += content;
+          },
+        })
+        .then(() => {
+          clearTimeout(timeout);
+          isComplete = true;
+          console.log('Stream completed successfully');
+          console.log('Final text length:', fullText.length);
+          resolve(fullText);
+        })
+        .catch((error) => {
+          clearTimeout(timeout);
+          console.error('Stream error:', error);
+          reject(error);
+        });
       });
 
-      console.log('Stream completed, full text:', fullText);
+      // Wait for the stream to complete
+      await streamPromise;
+      
+      console.log('Stream completed, full text length:', fullText.length);
+      console.log('Text preview:', fullText.substring(0, 100));
+
+      if (!isComplete) {
+        throw new Error('Stream did not complete properly');
+      }
+
+      if (!fullText) {
+        throw new Error('No content was generated');
+      }
 
       // Return the result as a properly formatted JSON response
       return new Response(
-        JSON.stringify({ result: fullText }), 
+        JSON.stringify({ 
+          result: fullText,
+          length: fullText.length,
+          isComplete: isComplete
+        }), 
         { headers: corsHeaders }
       );
 
     } catch (streamError) {
       console.error('Stream error:', streamError);
       return new Response(
-        JSON.stringify({ error: 'Stream error', details: streamError.message }), 
+        JSON.stringify({ 
+          error: 'Stream error', 
+          details: streamError.message,
+          stack: streamError.stack 
+        }), 
         { status: 500, headers: corsHeaders }
       );
     }
