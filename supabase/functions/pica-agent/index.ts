@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Pica } from "npm:@picahq/ai";
 import { openai } from "npm:@ai-sdk/openai";
-import { streamText } from "npm:ai";
+import { generateText } from "npm:ai";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,22 +21,15 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
-    console.log('Received body:', body);
+    const { message } = await req.json();
+    console.log('Received message:', message);
 
-    if (!body.messages || !Array.isArray(body.messages)) {
+    if (!message) {
       return new Response(
-        JSON.stringify({ error: 'Messages array is required and must be an array' }), 
+        JSON.stringify({ error: 'Message is required' }), 
         { status: 400, headers: corsHeaders }
       );
     }
-
-    const formattedMessages = body.messages.map(msg => ({
-      role: msg.role || 'user',
-      content: msg.content || ''
-    }));
-
-    console.log('Formatted messages:', formattedMessages);
 
     const pica_key = Deno.env.get('PICA_SECRET_KEY');
     if (!pica_key) {
@@ -53,83 +46,31 @@ serve(async (req) => {
 
     // Generate system prompt
     console.log('Generating system prompt...');
-    const system = await pica.generateSystemPrompt();
-    console.log('System prompt generated:', system);
-
-    // Initialize OpenAI
-    console.log('Initializing OpenAI...');
-    const model = openai("gpt-4");  // Changed from gpt-4o to gpt-4
-    console.log('OpenAI initialized');
+    const systemPrompt = await pica.generateSystemPrompt();
+    console.log('System prompt generated');
 
     try {
-      let fullText = '';
-      
-      console.log('Starting streamText...');
-      console.log('Tools available:', Object.keys(pica.oneTool));
-
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Stream timeout after 30 seconds'));
-        }, 30000);
-
-        try {
-          console.log('Configuring stream...');
-          streamText({
-            model,
-            system,
-            tools: pica.oneTool,  // Removed spread operator
-            messages: formattedMessages,
-            maxSteps: body.maxSteps || 5,  // Reduced max steps
-            onTextContent: (content: string) => {
-              console.log('Received chunk length:', content.length);
-              console.log('Chunk preview:', content.substring(0, 50));
-              fullText += content;
-            },
-            onComplete: () => {
-              clearTimeout(timeout);
-              console.log('Stream completed successfully');
-              console.log('Final text length:', fullText.length);
-              resolve();
-            },
-            onError: (error) => {
-              clearTimeout(timeout);
-              console.error('Stream error in handler:', error);
-              reject(error);
-            },
-            onStep: (step) => {
-              console.log('Processing step:', step);
-            }
-          });
-          console.log('Stream configured and started');
-        } catch (err) {
-          clearTimeout(timeout);
-          console.error('Error during stream configuration:', err);
-          reject(err);
-        }
+      console.log('Starting generateText...');
+      const { text } = await generateText({
+        model: openai("gpt-4"),  // Using gpt-4 instead of gpt-4o
+        system: systemPrompt,
+        tools: pica.oneTool,  // Passing tools directly
+        prompt: message,
+        maxSteps: 5,
       });
-      
-      console.log('Stream completed, full text length:', fullText.length);
-      console.log('Text preview:', fullText.substring(0, 100));
-
-      if (!fullText) {
-        throw new Error('No content was generated');
-      }
+      console.log('Text generated successfully');
 
       return new Response(
-        JSON.stringify({ 
-          result: fullText,
-          length: fullText.length
-        }), 
+        JSON.stringify({ text }), 
         { headers: corsHeaders }
       );
 
-    } catch (streamError) {
-      console.error('Stream error:', streamError);
+    } catch (aiError) {
+      console.error('AI generation error:', aiError);
       return new Response(
         JSON.stringify({ 
-          error: 'Stream error', 
-          details: streamError.message,
-          stack: streamError.stack 
+          error: 'AI generation error', 
+          details: aiError.message 
         }), 
         { status: 500, headers: corsHeaders }
       );
