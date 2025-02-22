@@ -12,6 +12,12 @@ interface SalesforceAuth {
   instance_url: string;
 }
 
+interface RequestBody {
+  query?: string;
+  maxRecords?: number;
+  objectType?: string;
+}
+
 async function getSalesforceAuth(): Promise<SalesforceAuth> {
   const clientId = Deno.env.get('SALESFORCE_CLIENT_ID');
   const clientSecret = Deno.env.get('SALESFORCE_CLIENT_SECRET');
@@ -50,12 +56,10 @@ async function getSalesforceAuth(): Promise<SalesforceAuth> {
   }
 }
 
-async function fetchTasks(auth: SalesforceAuth) {
-  console.log('Fetching tasks from Salesforce...');
+async function executeSalesforceQuery(auth: SalesforceAuth, query: string) {
+  console.log('Executing Salesforce query:', query);
   try {
-    const response = await fetch(`${auth.instance_url}/services/data/v57.0/query/?q=${encodeURIComponent(
-      'SELECT Id, Subject, Status, ActivityDate FROM Task ORDER BY ActivityDate DESC LIMIT 10'
-    )}`, {
+    const response = await fetch(`${auth.instance_url}/services/data/v57.0/query/?q=${encodeURIComponent(query)}`, {
       headers: {
         'Authorization': `Bearer ${auth.access_token}`,
       },
@@ -63,15 +67,15 @@ async function fetchTasks(auth: SalesforceAuth) {
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('Failed to fetch tasks:', errorData);
-      throw new Error(`Failed to fetch tasks from Salesforce: ${errorData}`);
+      console.error('Failed to execute query:', errorData);
+      throw new Error(`Failed to execute Salesforce query: ${errorData}`);
     }
 
     const data = await response.json();
-    console.log('Successfully fetched tasks from Salesforce');
+    console.log('Successfully executed Salesforce query');
     return data;
   } catch (error) {
-    console.error('Error fetching tasks:', error);
+    console.error('Error executing query:', error);
     throw error;
   }
 }
@@ -83,13 +87,32 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting Salesforce tasks function...');
+    console.log('Starting Salesforce query function...');
     const auth = await getSalesforceAuth();
     
-    console.log('Fetching tasks...');
-    const tasks = await fetchTasks(auth);
+    // Get request body
+    let body: RequestBody = {};
+    if (req.method === 'POST') {
+      try {
+        body = await req.json();
+      } catch (e) {
+        console.warn('No body or invalid JSON in request');
+      }
+    }
+
+    // Use provided query or fallback to default
+    const query = body.query || 'SELECT Id, Subject, Status, ActivityDate FROM Task ORDER BY ActivityDate DESC';
+    const maxRecords = body.maxRecords || 10;
+
+    // Add LIMIT clause if not present in query
+    const finalQuery = query.toLowerCase().includes('limit') 
+      ? query 
+      : `${query} LIMIT ${maxRecords}`;
     
-    return new Response(JSON.stringify(tasks), {
+    console.log('Executing query:', finalQuery);
+    const data = await executeSalesforceQuery(auth, finalQuery);
+    
+    return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
