@@ -28,8 +28,7 @@ serve(async (req) => {
       );
     }
 
-    // Get the AI service URL from environment variable, fallback to a default if not set
-    const aiServiceUrl = Deno.env.get('AI_SERVICE_URL') || 'https://your-production-url.com/chat';
+    const aiServiceUrl = 'https://pica-handler.onrender.com';
     console.log('Using AI service URL:', aiServiceUrl);
 
     try {
