@@ -1,69 +1,29 @@
-# Welcome to your Lovable project
+## Inspiration
+Last week I had a call with the team in my project regarding new requirements from the business regarding displaying different stuff. Again. New version. It is always a compromise between different departments about dashboards, page layouts etc. I asked, there should be AI Agent that will prepare dynamic pages and then each User will see desired stuff. One girl replied: "Please do not say it to the business.". I will not say it to them. I will show it to them.
 
-## Project info
+## What it does
+dashpers allows  to create personalized business dashboards through natural language commands.
 
-**URL**: https://lovable.dev/projects/af07b5b8-641a-4e02-b813-ebf0e885b684
+## How we built it
+Stack: lovable (React, TypeScript, Tailwind), fal.ai, pica, render, IIElevenLabs, supabase, edge functions
+Used Anthropic framework of effective ai agent - [https://www.anthropic.com/research/building-effective-agents][Building effective agents]
 
-## How can I edit this code?
+## Challenges we ran into
+- I had to run external Node.js server to be able to use pica SDK, it was not possible to use it via supabase edge functions,
+- max stack limit calling IIElevenLabs,
+- lovable changed unnecessary code from time to time.
 
-There are several ways of editing your application.
+## Accomplishments that we're proud of
+In quite limited time and team (solo) I was able to provide some features that I am satisfied with. I was struggled at the beginning with some tools that I did not use before (probably I could deliver more with Cursor), but finally I am happy about the results.
 
-**Use Lovable**
+## What we learned
+This time instead of Cursor I decided to use new tech stack: **lovable, pica, fal.ai** - I did not use it before. It was fun!
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/af07b5b8-641a-4e02-b813-ebf0e885b684) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/af07b5b8-641a-4e02-b813-ebf0e885b684) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+## What's next for dashpers
+**Publish quick demo for feedback and talk to users.**
+Regarding tech improvements:
+- better chat with all the contents and sources,
+- more tools, mostly enterprise ones, for example connection to datalake like databricks,
+- better grid configuration (e.g. moving widgets with drag and drop),
+- speech to text - configure the dashboards with voice,
+- more actions and interactions with components (like links, records editing etc.).
