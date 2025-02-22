@@ -1,34 +1,16 @@
-
 import React, { useState, useEffect } from 'react';
 import { WidgetRegistry } from './widgets/WidgetRegistry';
 import { WidgetConfig, WidgetType, WidgetPreferences } from '@/types/widgets';
 import { supabase } from '@/lib/supabase';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { Button } from './ui/button';
+import { Pencil } from 'lucide-react';
 
-interface WidgetData {
-  id: string;
-  type: WidgetType;
-  title: string;
-  preferences: WidgetPreferences;
+interface DashboardProps {
+  onEditWidget: (widgetId: string) => void;
 }
 
-// Helper function to type-check if an object is a WidgetData
-function isWidgetData(data: any): data is WidgetData {
-  return (
-    data &&
-    typeof data.id === 'string' &&
-    typeof data.type === 'string' &&
-    typeof data.title === 'string' &&
-    typeof data.preferences === 'object'
-  );
-}
-
-// Helper function to check if an object has an id property of type string
-function hasValidId(data: Record<string, any> | null): data is { id: string } {
-  return Boolean(data && typeof data.id === 'string');
-}
-
-export const Dashboard: React.FC = () => {
+export const Dashboard: React.FC<DashboardProps> = ({ onEditWidget }) => {
   const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
 
   useEffect(() => {
@@ -118,10 +100,36 @@ export const Dashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="dashboard-grid">
+    <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {widgets.map(widget => (
-        <WidgetRegistry key={widget.id} config={widget} />
+        <div key={widget.id} className="relative group">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            onClick={() => onEditWidget(widget.id)}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <WidgetRegistry config={widget} />
+        </div>
       ))}
     </div>
   );
 };
+
+// Helper function to type-check if an object is a WidgetData
+function isWidgetData(data: any): data is WidgetData {
+  return (
+    data &&
+    typeof data.id === 'string' &&
+    typeof data.type === 'string' &&
+    typeof data.title === 'string' &&
+    typeof data.preferences === 'object'
+  );
+}
+
+// Helper function to check if an object has an id property of type string
+function hasValidId(data: Record<string, any> | null): data is { id: string } {
+  return Boolean(data && typeof data.id === 'string');
+}

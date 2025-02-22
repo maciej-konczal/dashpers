@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChatPanel } from '@/components/ChatPanel';
@@ -10,6 +9,7 @@ import { Button } from '@/components/ui/button';
 const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
 
   useEffect(() => {
     // Check current auth status
@@ -79,6 +79,11 @@ const Index = () => {
     }
   };
 
+  const handleEditWidget = (widgetId: string) => {
+    setEditingWidgetId(widgetId);
+    toast.info("Edit mode activated. Describe your changes in the chat.");
+  };
+
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -96,9 +101,9 @@ const Index = () => {
       <div className="flex justify-end p-4">
         <Button onClick={handleLogout}>Logout</Button>
       </div>
-      <ChatPanel onCommand={handleCommand} />
+      <ChatPanel onCommand={handleCommand} editingWidgetId={editingWidgetId} />
       <main className="pl-0 transition-all duration-300">
-        <Dashboard />
+        <Dashboard onEditWidget={handleEditWidget} />
       </main>
     </div>
   );
