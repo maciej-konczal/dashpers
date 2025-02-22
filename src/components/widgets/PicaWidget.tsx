@@ -21,15 +21,10 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
 
       const { prompt, tool, maxSteps = 5 } = config.preferences;
 
-      // Format the messages array properly
-      const messages = [{
-        role: 'user',
-        content: prompt
-      }];
-
+      // Send the prompt directly as message
       const { data, error: picaError } = await supabase.functions.invoke('pica-agent', {
         body: { 
-          messages,
+          message: prompt,
           tool,
           maxSteps
         }
@@ -37,7 +32,8 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
 
       if (picaError) throw picaError;
 
-      setResult(data.result);
+      // The response now includes 'text' instead of 'result'
+      setResult(data.text);
     } catch (err) {
       console.error('Error fetching Pica result:', err);
       setError(err.message);
@@ -79,9 +75,8 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
           </div>
         ) : (
           <div className="prose">
-            {/* Render the result based on the tool's output format */}
             <pre className="whitespace-pre-wrap">
-              {JSON.stringify(result, null, 2)}
+              {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
             </pre>
           </div>
         )}
