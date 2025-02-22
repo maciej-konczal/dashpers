@@ -91,11 +91,9 @@ serve(async (req) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        input: {
-          model: "anthropic/claude-3-sonnet",
-          prompt: prompt,
-          functions: tools.map(t => t.function)
-        }
+        model: "anthropic/claude-3-sonnet",
+        prompt: prompt,
+        functions: tools.map(t => t.function)
       })
     });
 
