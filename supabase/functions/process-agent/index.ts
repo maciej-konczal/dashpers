@@ -48,7 +48,7 @@ serve(async (req) => {
 
     console.log('Starting fal.ai request with prompt:', prompt);
 
-    // Use fal.ai client with subscribe method and the correct model name
+    // Use fal.ai client with subscribe method
     const result = await fal.subscribe("fal-ai/any-llm", {
       input: {
         model: "anthropic/claude-3.5-sonnet",
@@ -62,7 +62,8 @@ serve(async (req) => {
 
     console.log('Fal.ai Response:', result);
 
-    const assistantResponse = result.response || '';
+    // Get the response from the correct path in the result object
+    const assistantResponse = result.data?.output || '';
     
     let widgetConfig = null;
     let finalMessage = assistantResponse;
