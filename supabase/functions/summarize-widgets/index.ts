@@ -1,76 +1,58 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { fal } from "npm:@fal-ai/client";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { OpenAI } from "https://deno.land/x/openai@v4.20.1/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-const falKey = Deno.env.get('FAL_AI_KEY');
-if (falKey) {
-  fal.config({
-    credentials: falKey,
-  });
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
+  const openai = new OpenAI({
+    apiKey: Deno.env.get('OPENAI_API_KEY')
+  });
+
   try {
-    const { content } = await req.json();
-    
-    if (!falKey) {
-      throw new Error('FAL_AI_KEY is not configured');
+    const { content } = await req.json()
+
+    if (!content) {
+      throw new Error('Content is required')
     }
 
-    console.log('Processing summary request with content:', content);
-
-    const prompt = `
-Please provide a comprehensive summary of all the widget contents below. Each widget is separated by "---". Make sure to include key information from every widget:
-
-${content}
-
-Format the summary as a clear overview that captures the essential information from each widget. For Salesforce widgets, include details about all records shown.
-    `.trim();
-
-    const result = await fal.subscribe("fal-ai/any-llm", {
-      input: {
-        model: "anthropic/claude-3.5-sonnet",
-        prompt: prompt,
-        temperature: 0.7,
-        max_tokens: 1000, // Increased to handle more content
-      },
-      logs: true,
-      onQueueUpdate: (update) => {
-        console.log('Queue update:', update);
-      }
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful assistant that creates very concise summaries. Limit your response to 2-4 sentences, focusing only on the most important information. Avoid repetition and unnecessary details."
+        },
+        {
+          role: "user",
+          content: `Please provide a brief summary of these widgets: ${content}`
+        }
+      ],
+      max_tokens: 200,
+      temperature: 0.7,
     });
 
-    if (!result.data?.output) {
-      throw new Error('No output received from AI');
-    }
-
-    console.log('Generated summary:', result.data.output);
+    const summary = completion.choices[0].message.content;
 
     return new Response(
-      JSON.stringify({ summary: result.data.output }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+      JSON.stringify({ summary }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
   } catch (error) {
-    console.error('Error in summarize-widgets function:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    );
+    )
   }
-});
+})
