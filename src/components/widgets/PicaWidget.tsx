@@ -37,7 +37,8 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
 
       if (picaError) throw picaError;
 
-      setResult(data.text);
+      // Handle both response formats (data.text or data.response)
+      setResult(data.response || data.text);
     } catch (err) {
       console.error('Error fetching Pica result:', err);
       setError(err.message);
