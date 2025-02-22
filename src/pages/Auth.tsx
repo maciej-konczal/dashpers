@@ -96,6 +96,15 @@ const Auth = () => {
                 ? 'Already have an account? Login'
                 : "Don't have an account? Sign Up"}
             </Button>
+
+            {/* Test credentials info */}
+            <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <p className="text-sm text-slate-600 font-medium mb-2">Test Credentials:</p>
+              <div className="space-y-1">
+                <p className="text-sm text-slate-600">Email: maciej@dashpers.com</p>
+                <p className="text-sm text-slate-600">Password: pbm6tbe-wxf.aqg3CAC</p>
+              </div>
+            </div>
           </form>
         </CardContent>
       </Card>
