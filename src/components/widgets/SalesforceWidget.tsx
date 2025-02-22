@@ -86,35 +86,38 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
     }
   };
 
+  // Create a wrapper div to handle the background and other styles
   return (
-    <Card className={`${backgroundColor} widget border-none [&>*]:bg-inherit`}>
-      <CardHeader>
-        <CardTitle>{config.title || 'Salesforce Data'}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading && (
-          <div className="flex items-center justify-center py-4">
-            <Loader2 className="h-6 w-6 animate-spin" />
-          </div>
-        )}
-        
-        {error && (
-          <p className="text-red-500">Error loading data: {error.message}</p>
-        )}
-
-        {salesforceData && (
-          <>
-            {show_totals && (
-              <div className="mb-4 text-sm text-gray-600">
-                Total records: {salesforceData.length}
-              </div>
-            )}
-            <div className="overflow-x-auto">
-              {renderContent()}
+    <div className={`${backgroundColor} rounded-lg shadow-lg min-h-[200px]`}>
+      <Card className="widget border-none shadow-none bg-transparent">
+        <CardHeader className="bg-transparent">
+          <CardTitle className="bg-transparent">{config.title || 'Salesforce Data'}</CardTitle>
+        </CardHeader>
+        <CardContent className="bg-transparent">
+          {isLoading && (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin" />
             </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          )}
+          
+          {error && (
+            <p className="text-red-500">Error loading data: {error.message}</p>
+          )}
+
+          {salesforceData && (
+            <>
+              {show_totals && (
+                <div className="mb-4 text-sm text-gray-600">
+                  Total records: {salesforceData.length}
+                </div>
+              )}
+              <div className="overflow-x-auto">
+                {renderContent()}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
