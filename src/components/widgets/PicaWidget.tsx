@@ -21,8 +21,18 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
 
       const { prompt, tool, maxSteps = 5 } = config.preferences;
 
+      // Format the messages array properly
+      const messages = [{
+        role: 'user',
+        content: prompt
+      }];
+
       const { data, error: picaError } = await supabase.functions.invoke('pica-agent', {
-        body: { prompt, tool, maxSteps }
+        body: { 
+          messages,
+          tool,
+          maxSteps
+        }
       });
 
       if (picaError) throw picaError;
