@@ -2,6 +2,12 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Content-Type': 'application/json'
+};
+
 const tools = {
   create_widget: {
     name: "create_widget",
@@ -96,17 +102,16 @@ When using the update_widget tool:
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-      }
-    });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { messages, currentWidget } = await req.json();
+
+    console.log('Received request with messages:', messages);
+    console.log('Current widget context:', currentWidget);
     
     const systemPrompt = generateSystemPrompt(currentWidget);
     
@@ -127,6 +132,7 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
+      console.error('OpenAI API error:', await response.text());
       throw new Error('Failed to get AI response');
     }
 
@@ -141,14 +147,17 @@ serve(async (req) => {
       tool: toolCall.tool,
       widgetConfig: toolCall.parameters
     }), {
-      headers: { 'Content-Type': 'application/json' }
+      headers: corsHeaders
     });
 
   } catch (error) {
     console.error('Error in AI agent:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: error.stack 
+    }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: corsHeaders
     });
   }
 });
