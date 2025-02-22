@@ -16,11 +16,6 @@ import { Loader2 } from 'lucide-react';
 import { useWidgetStore } from '@/stores/widgetStore';
 import { fal } from '@fal-ai/client';
 
-// Configure fal client
-fal.config({
-  credentials: import.meta.env.VITE_FAL_KEY,
-});
-
 const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -59,6 +54,20 @@ const Index = () => {
     setShowSummary(true);
     
     try {
+      // Get the FAL AI key from Supabase function
+      const { data: { key: falKey }, error: keyError } = await supabase.functions.invoke('ai-agent', {
+        body: { action: 'get-fal-key' }
+      });
+
+      if (keyError || !falKey) {
+        throw new Error('Failed to get FAL AI key');
+      }
+
+      // Configure fal client with the key from Supabase
+      fal.config({
+        credentials: falKey,
+      });
+
       // Format the content for the summary
       const formattedContent = widgetContents
         .map(w => `${w.title} (${w.type}):\n${w.content}`)
