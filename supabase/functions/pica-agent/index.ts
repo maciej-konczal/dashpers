@@ -47,16 +47,25 @@ serve(async (req) => {
     }
 
     // Initialize Pica client
+    console.log('Initializing Pica client...');
     const pica = new Pica(pica_key);
+    console.log('Pica client initialized');
 
     // Generate system prompt
+    console.log('Generating system prompt...');
     const system = await pica.generateSystemPrompt();
-    console.log('Generated system prompt');
+    console.log('System prompt generated:', system);
+
+    // Initialize OpenAI
+    console.log('Initializing OpenAI...');
+    const model = openai("gpt-4");  // Changed from gpt-4o to gpt-4
+    console.log('OpenAI initialized');
 
     try {
       let fullText = '';
       
       console.log('Starting streamText...');
+      console.log('Tools available:', Object.keys(pica.oneTool));
 
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
@@ -64,14 +73,13 @@ serve(async (req) => {
         }, 30000);
 
         try {
+          console.log('Configuring stream...');
           streamText({
-            model: openai("gpt-4o"),
+            model,
             system,
-            tools: {
-              ...pica.oneTool,
-            },
+            tools: pica.oneTool,  // Removed spread operator
             messages: formattedMessages,
-            maxSteps: body.maxSteps || 20,
+            maxSteps: body.maxSteps || 5,  // Reduced max steps
             onTextContent: (content: string) => {
               console.log('Received chunk length:', content.length);
               console.log('Chunk preview:', content.substring(0, 50));
@@ -85,12 +93,17 @@ serve(async (req) => {
             },
             onError: (error) => {
               clearTimeout(timeout);
-              console.error('Stream error:', error);
+              console.error('Stream error in handler:', error);
               reject(error);
+            },
+            onStep: (step) => {
+              console.log('Processing step:', step);
             }
           });
+          console.log('Stream configured and started');
         } catch (err) {
           clearTimeout(timeout);
+          console.error('Error during stream configuration:', err);
           reject(err);
         }
       });
@@ -102,7 +115,6 @@ serve(async (req) => {
         throw new Error('No content was generated');
       }
 
-      // Return the result as a properly formatted JSON response
       return new Response(
         JSON.stringify({ 
           result: fullText,
