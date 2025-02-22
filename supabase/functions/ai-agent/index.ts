@@ -2,12 +2,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-// Tool definitions
 const tools = {
   create_widget: {
     name: "create_widget",
@@ -38,15 +32,6 @@ const tools = {
     parameters: {
       type: "object",
       properties: {
-        type: {
-          type: "string",
-          enum: ["salesforce", "slack", "news", "weather", "calendar", "chart"],
-          description: "The type of widget (if changing)"
-        },
-        title: {
-          type: "string",
-          description: "Updated title (if changing)"
-        },
         preferences: {
           type: "object",
           description: "Updated widget preferences"
@@ -83,7 +68,8 @@ Always follow these rules:
 3. If they want to modify an existing widget, use the update_widget tool
 4. If they just need information or have a question, use final_answer tool
 5. Always be clear and concise in your responses
-6. If you don't understand the request or can't help, use final_answer to explain why`;
+6. For color changes (e.g. "change background to #123456"), ALWAYS use update_widget tool and update the preferences.backgroundColor
+7. If you don't understand the request or can't help, use final_answer to explain why`;
 
   // Add context about current widget if editing
   if (currentWidget) {
@@ -95,7 +81,7 @@ When using the update_widget tool:
 - Only include properties that need to be changed
 - Preserve existing preferences unless explicitly asked to change them
 - Use the same widget type unless asked to change it
-- Keep the same query structure for Salesforce widgets unless specifically asked to modify it`;
+- For color changes, update preferences.backgroundColor with the new hex color`;
   }
 
   basePrompt += `\n\nRespond in the following JSON format:
@@ -112,7 +98,12 @@ When using the update_widget tool:
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      }
+    });
   }
 
   try {
@@ -148,20 +139,39 @@ serve(async (req) => {
     const toolCall = JSON.parse(aiResponse.choices[0].message.content);
     console.log('Tool Call:', toolCall);
 
+    // Special handling for color change commands
+    if (currentWidget && messages[messages.length - 1].content.match(/change (?:background|color) to (#[0-9A-Fa-f]{6})/i)) {
+      const colorMatch = messages[messages.length - 1].content.match(/change (?:background|color) to (#[0-9A-Fa-f]{6})/i);
+      const newColor = colorMatch[1];
+      
+      return new Response(JSON.stringify({
+        tool: 'update_widget',
+        message: `Updating widget background color to ${newColor}`,
+        widgetConfig: {
+          preferences: {
+            ...currentWidget.preferences,
+            backgroundColor: newColor
+          }
+        }
+      }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     // Return the tool call response
     return new Response(JSON.stringify({
       message: aiResponse.choices[0].message.content,
       tool: toolCall.tool,
       widgetConfig: toolCall.parameters
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
     console.error('Error in AI agent:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 });
