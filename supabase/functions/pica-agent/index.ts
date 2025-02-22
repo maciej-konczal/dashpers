@@ -1,8 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Pica } from "npm:@picahq/ai";
-import { openai } from "npm:@ai-sdk/openai";
-import { streamText } from "npm:ai";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -68,17 +66,36 @@ serve(async (req) => {
       console.log('Starting OpenAI completion...');
       console.log('Tools configuration:', JSON.stringify(pica.oneTool, null, 2));
       
-      // Create the completion
-      const completion = await openai("gpt-4o").chat.completions.create({
-        messages: [
-          { role: "system", content: system },
-          ...formattedMessages
-        ],
-        tools: pica.oneTool,
-        stream: false,
-        max_tokens: 1000
+      const openai_key = Deno.env.get('OPENAI_API_KEY');
+      if (!openai_key) {
+        throw new Error('OPENAI_API_KEY is not set');
+      }
+
+      // Create the completion using fetch directly
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openai_key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [
+            { role: "system", content: system },
+            ...formattedMessages
+          ],
+          tools: pica.oneTool,
+          max_tokens: 1000
+        }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('OpenAI API error:', errorData);
+        throw new Error(`OpenAI API error: ${JSON.stringify(errorData)}`);
+      }
+
+      const completion = await response.json();
       console.log('Raw completion response:', JSON.stringify(completion, null, 2));
 
       // Extract the response from the completion
@@ -86,11 +103,11 @@ serve(async (req) => {
       console.log('Extracted result:', result);
 
       // Return the result as a properly formatted JSON response
-      const response = { result };
-      console.log('Sending response:', JSON.stringify(response, null, 2));
+      const finalResponse = { result };
+      console.log('Sending response:', JSON.stringify(finalResponse, null, 2));
       
       return new Response(
-        JSON.stringify(response), 
+        JSON.stringify(finalResponse), 
         { headers: corsHeaders }
       );
 
