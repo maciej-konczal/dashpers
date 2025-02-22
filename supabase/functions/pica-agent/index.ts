@@ -35,17 +35,18 @@ serve(async (req) => {
       headers: {
         'Authorization': `Bearer ${pica_key}`,
         'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify(requestBody)
     };
     console.log('Request configuration:', {
-      url: 'https://api.pica.io/v1/chat',
+      url: 'https://picahq.com/api/v1/chat',
       method: requestConfig.method,
       headers: Object.keys(requestConfig.headers)
     });
 
     console.log('Initiating fetch request to Pica API...');
-    const response = await fetch('https://api.pica.io/v1/chat', requestConfig);
+    const response = await fetch('https://picahq.com/api/v1/chat', requestConfig);
     console.log('Response status:', response.status);
 
     if (!response.ok) {
