@@ -36,39 +36,6 @@ export const useChat = (onCommand: (command: string) => void) => {
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
 
     try {
-      if (editingWidgetId) {
-        // Handle widget editing logic
-        const currentWidget = await fetchWidgetData(editingWidgetId);
-        if (!currentWidget) {
-          throw new Error("Could not find widget to edit");
-        }
-
-        // Check if it's a color change command
-        const colorMatch = userMessage.match(/change (?:background|color) to (#[0-9A-Fa-f]{6})/i);
-        if (colorMatch) {
-          const newColor = colorMatch[1];
-          const { error } = await supabase
-            .from('widgets')
-            .update({
-              preferences: {
-                ...currentWidget.preferences,
-                backgroundColor: newColor
-              }
-            })
-            .eq('id', editingWidgetId);
-
-          if (error) throw error;
-
-          setMessages(prev => [...prev, { 
-            role: 'assistant', 
-            content: `Background color updated to ${newColor}`
-          }]);
-          toast.success('Widget color updated successfully!');
-          return;
-        }
-      }
-
-      // If not editing a widget or not a color command, proceed with normal AI response
       const response = await supabase.functions.invoke('ai-agent', {
         body: { 
           messages: [...messages, { role: 'user', content: userMessage }],
