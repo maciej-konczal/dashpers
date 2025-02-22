@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { PicaAI } from "https://esm.sh/@picahq/ai@2.0.8";
+import { AI } from "https://esm.sh/@picahq/ai@2.0.8";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,7 +23,7 @@ serve(async (req) => {
     }
 
     console.log('Initializing Pica with key length:', pica_key.length);
-    const pica = new PicaAI(pica_key);
+    const pica = new AI(pica_key);
 
     console.log('Preparing chat request with:', { prompt, tool, maxSteps });
     const result = await pica.chat({
