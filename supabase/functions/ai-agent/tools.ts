@@ -1,3 +1,4 @@
+
 import { Tool } from './types.ts';
 
 export const tools: Record<string, Tool> = {
@@ -9,8 +10,8 @@ export const tools: Record<string, Tool> = {
       properties: {
         type: {
           type: "string",
-          enum: ["salesforce", "pica", "slack", "news", "weather", "calendar", "chart"],
-          description: "The type of widget to create"
+          enum: ["salesforce", "pica"],
+          description: "Use 'salesforce' for Salesforce-specific tasks (tasks, accounts, opportunities), use 'pica' for everything else (weather, news, general information)"
         },
         title: {
           type: "string",
@@ -18,8 +19,13 @@ export const tools: Record<string, Tool> = {
         },
         preferences: {
           type: "object",
-          description: "Widget-specific preferences. For Pica widgets, must include prompt and optional tool name.",
+          description: "Widget-specific preferences. For Salesforce widgets, include SOQL query and display preferences. For Pica widgets, include prompt and optional tool name.",
           example: {
+            // Salesforce example
+            "soql_query": "SELECT Id, Name FROM Account",
+            "max_records": 10,
+            "show_totals": true,
+            // Pica example
             "prompt": "Get the current weather for London",
             "tool": "weather",
             "maxSteps": 5,
@@ -43,8 +49,9 @@ export const tools: Record<string, Tool> = {
         },
         preferences: {
           type: "object",
-          description: "Any widget preferences that need to be updated. For Salesforce widgets, ensure all required fields are included.",
+          description: "Any widget preferences that need to be updated. For Salesforce widgets, ensure all required fields are included. For Pica widgets, include updated prompt or tool settings.",
           example: {
+            // Salesforce example
             "columns": [
               {
                 "field": "Name",
@@ -63,7 +70,12 @@ export const tools: Record<string, Tool> = {
             "show_totals": true,
             "backgroundColor": "#add8e6",
             "refreshInterval": 300,
-            "fields_to_display": ["Name", "AnnualRevenue"]
+            // Pica example
+            "prompt": "Get the latest tech news",
+            "tool": "news",
+            "maxSteps": 5,
+            "backgroundColor": "bg-blue-100",
+            "refreshInterval": 300
           }
         }
       },

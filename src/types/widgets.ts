@@ -1,5 +1,5 @@
 
-export type WidgetType = 'salesforce' | 'slack' | 'news' | 'weather' | 'calendar' | 'chart';
+export type WidgetType = 'salesforce' | 'pica';
 
 export interface WidgetPreferences {
   [key: string]: any;
@@ -12,6 +12,15 @@ export interface SalesforceWidgetPreferences extends WidgetPreferences {
   chart_type?: 'table' | 'bar' | 'line';
   max_records?: number;
   fields_to_display?: string[];
+  refreshInterval?: number;
+}
+
+export interface PicaWidgetPreferences extends WidgetPreferences {
+  prompt: string;
+  tool?: string;
+  maxSteps?: number;
+  backgroundColor?: string;
+  refreshInterval?: number;
 }
 
 export interface WidgetConfig {
