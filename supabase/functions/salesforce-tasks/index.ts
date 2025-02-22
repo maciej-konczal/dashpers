@@ -18,6 +18,8 @@ async function getSalesforceAuth(): Promise<SalesforceAuth> {
   const username = Deno.env.get('SALESFORCE_USERNAME');
   const password = Deno.env.get('SALESFORCE_PASSWORD');
 
+  console.log('Attempting Salesforce authentication with provided credentials...');
+
   const params = new URLSearchParams({
     grant_type: 'password',
     client_id: clientId!,
@@ -26,33 +28,52 @@ async function getSalesforceAuth(): Promise<SalesforceAuth> {
     password: password!,
   });
 
-  const response = await fetch('https://login.salesforce.com/services/oauth2/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params.toString(),
-  });
+  try {
+    const response = await fetch('https://login.salesforce.com/services/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
 
-  if (!response.ok) {
-    throw new Error('Failed to authenticate with Salesforce');
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Salesforce authentication failed:', errorData);
+      throw new Error(`Failed to authenticate with Salesforce: ${errorData}`);
+    }
+
+    const data = await response.json();
+    console.log('Successfully authenticated with Salesforce');
+    return data;
+  } catch (error) {
+    console.error('Error during Salesforce authentication:', error);
+    throw error;
   }
-
-  return response.json();
 }
 
 async function fetchTasks(auth: SalesforceAuth) {
-  const response = await fetch(`${auth.instance_url}/services/data/v57.0/query/?q=${encodeURIComponent(
-    'SELECT Id, Subject, Status, ActivityDate FROM Task ORDER BY ActivityDate DESC LIMIT 10'
-  )}`, {
-    headers: {
-      'Authorization': `Bearer ${auth.access_token}`,
-    },
-  });
+  console.log('Fetching tasks from Salesforce...');
+  try {
+    const response = await fetch(`${auth.instance_url}/services/data/v57.0/query/?q=${encodeURIComponent(
+      'SELECT Id, Subject, Status, ActivityDate FROM Task ORDER BY ActivityDate DESC LIMIT 10'
+    )}`, {
+      headers: {
+        'Authorization': `Bearer ${auth.access_token}`,
+      },
+    });
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch tasks from Salesforce');
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Failed to fetch tasks:', errorData);
+      throw new Error(`Failed to fetch tasks from Salesforce: ${errorData}`);
+    }
+
+    const data = await response.json();
+    console.log('Successfully fetched tasks from Salesforce');
+    return data;
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    throw error;
   }
-
-  return response.json();
 }
 
 serve(async (req) => {
@@ -62,7 +83,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Authenticating with Salesforce...');
+    console.log('Starting Salesforce tasks function...');
     const auth = await getSalesforceAuth();
     
     console.log('Fetching tasks...');
