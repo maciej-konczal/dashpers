@@ -31,11 +31,11 @@ serve(async (req) => {
     console.log('Processing summary request with content:', content);
 
     const prompt = `
-Please provide a comprehensive summary of all the following widget contents:
+Please provide a comprehensive summary of all the widget contents below. Each widget is separated by "---". Make sure to include key information from every widget:
 
 ${content}
 
-Format the summary as a clear overview of all widgets' content.
+Format the summary as a clear overview that captures the essential information from each widget. For Salesforce widgets, include details about all records shown.
     `.trim();
 
     const result = await fal.subscribe("fal-ai/any-llm", {
@@ -43,7 +43,7 @@ Format the summary as a clear overview of all widgets' content.
         model: "anthropic/claude-3.5-sonnet",
         prompt: prompt,
         temperature: 0.7,
-        max_tokens: 500,
+        max_tokens: 1000, // Increased to handle more content
       },
       logs: true,
       onQueueUpdate: (update) => {

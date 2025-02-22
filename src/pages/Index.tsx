@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChatPanel } from '@/components/ChatPanel';
@@ -10,10 +11,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Loader2 } from 'lucide-react';
 import { useWidgetStore } from '@/stores/widgetStore';
-import { fal } from '@fal-ai/client';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -53,9 +54,30 @@ const Index = () => {
     setShowSummary(true);
     
     try {
+      // Format content based on widget type
       const formattedContent = widgetContents
-        .map(w => `${w.title} (${w.type}):\n${w.content}`)
-        .join('\n\n');
+        .map(w => {
+          let content = w.content;
+          
+          // For Salesforce widgets, ensure we capture all records
+          if (w.type === 'salesforce') {
+            try {
+              const data = JSON.parse(content);
+              if (Array.isArray(data)) {
+                content = data.map(record => 
+                  Object.entries(record)
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join(', ')
+                ).join('\n');
+              }
+            } catch (e) {
+              console.error('Error parsing Salesforce data:', e);
+            }
+          }
+          
+          return `${w.title} (${w.type}):\n${content}`;
+        })
+        .join('\n\n---\n\n'); // Better separation between widgets
 
       const { data, error } = await supabase.functions.invoke('summarize-widgets', {
         body: { content: formattedContent }
@@ -184,6 +206,9 @@ const Index = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Widgets Summary</DialogTitle>
+            <DialogDescription>
+              A comprehensive overview of all your widgets
+            </DialogDescription>
           </DialogHeader>
           <div className="mt-4">
             {isSummarizing ? (
@@ -191,7 +216,7 @@ const Index = () => {
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
             ) : (
-              <div className="prose max-w-none">
+              <div className="prose max-w-none whitespace-pre-wrap">
                 {summary || "No summary available"}
               </div>
             )}
