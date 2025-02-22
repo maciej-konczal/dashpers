@@ -36,7 +36,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onCommand }) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      const response = await supabase.functions.invoke('process-agent', {
+      const response = await supabase.functions.invoke('ai-agent', {
         body: { 
           messages: [...messages, { role: 'user', content: userMessage }]
         }
@@ -46,13 +46,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onCommand }) => {
         throw new Error(response.error.message);
       }
 
-      const { message, widgetConfig } = response.data;
+      const { message, widgetConfig, tool } = response.data;
 
       // Add assistant response to chat
       setMessages(prev => [...prev, { role: 'assistant', content: message }]);
 
       // If widget config was generated, create it
-      if (widgetConfig) {
+      if (tool === 'create_widget' && widgetConfig) {
         try {
           const { error: widgetError } = await supabase
             .from('widgets')
