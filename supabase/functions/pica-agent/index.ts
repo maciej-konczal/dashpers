@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { Pica } from "npm:@picahq/ai";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,45 +22,23 @@ serve(async (req) => {
     if (!pica_key) {
       throw new Error('PICA_SECRET_KEY is not set');
     }
-    console.log('PICA_SECRET_KEY found with length:', pica_key.length);
 
-    // Using Pica's newer API format
-    const requestBody = {
-      model: "gpt-4",
-      messages: [{ role: 'user', content: prompt }],
-      tools: ["pica.oneTool"], // Updated format for tools
-      max_steps: maxSteps // Using snake_case as per API
-    };
-    console.log('Preparing request body:', JSON.stringify(requestBody, null, 2));
-
-    const requestConfig = {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${pica_key}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
-    };
-    console.log('Request configuration:', {
-      url: 'https://api.picahq.com/v1/chat/completions',
-      method: requestConfig.method,
-      headers: Object.keys(requestConfig.headers)
+    // Initialize Pica SDK
+    const pica = new Pica({
+      apiKey: pica_key
     });
 
-    console.log('Initiating fetch request to Pica API...');
-    const response = await fetch('https://api.picahq.com/v1/chat/completions', requestConfig);
-    console.log('Response status:', response.status);
+    console.log('Sending request to Pica using SDK...');
+    const completion = await pica.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      model: "gpt-4",
+      tools: ["pica.oneTool"],
+      max_steps: maxSteps
+    });
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('API error response:', errorData);
-      throw new Error(`Pica API error (${response.status}): ${errorData}`);
-    }
-
-    const result = await response.json();
-    console.log('Successfully received and parsed response');
+    console.log('Successfully received response from Pica');
     
-    return new Response(JSON.stringify({ result }), {
+    return new Response(JSON.stringify({ result: completion }), {
       headers: {
         ...corsHeaders,
         'Cache-Control': 'no-cache'
