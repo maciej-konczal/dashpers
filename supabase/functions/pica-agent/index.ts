@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Accept': 'application/json',
   'Content-Type': 'application/json'
 };
 
@@ -25,7 +26,7 @@ serve(async (req) => {
 
     // Following Pica's official format
     const requestBody = {
-      model: "gpt-4",
+      model: "gpt-4o-mini",
       messages: [{ role: 'user', content: prompt }],
       tools: "pica.oneTool", // Using the oneTool as specified
       maxSteps: maxSteps
