@@ -28,9 +28,9 @@ serve(async (req) => {
       );
     }
 
-    // For now using localhost, we'll change this URL later for production
-    const aiServiceUrl = 'http://localhost:3000/chat';
-    console.log('Sending request to:', aiServiceUrl);
+    // Get the AI service URL from environment variable, fallback to a default if not set
+    const aiServiceUrl = Deno.env.get('AI_SERVICE_URL') || 'https://your-production-url.com/chat';
+    console.log('Using AI service URL:', aiServiceUrl);
 
     try {
       const response = await fetch(aiServiceUrl, {
