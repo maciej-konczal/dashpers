@@ -55,52 +55,48 @@ serve(async (req) => {
 
     try {
       let fullText = '';
-      let isComplete = false;
       
       console.log('Starting streamText...');
 
-      const streamPromise = new Promise((resolve, reject) => {
-        let timeout = setTimeout(() => {
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
           reject(new Error('Stream timeout after 30 seconds'));
         }, 30000);
 
-        streamText({
-          model: openai("gpt-4o"),
-          system,
-          tools: {
-            ...pica.oneTool,
-          },
-          messages: formattedMessages,
-          maxSteps: body.maxSteps || 20,
-          onTextContent: (content: string) => {
-            console.log('Received chunk length:', content.length);
-            console.log('Chunk preview:', content.substring(0, 50));
-            fullText += content;
-          },
-        })
-        .then(() => {
+        try {
+          streamText({
+            model: openai("gpt-4o"),
+            system,
+            tools: {
+              ...pica.oneTool,
+            },
+            messages: formattedMessages,
+            maxSteps: body.maxSteps || 20,
+            onTextContent: (content: string) => {
+              console.log('Received chunk length:', content.length);
+              console.log('Chunk preview:', content.substring(0, 50));
+              fullText += content;
+            },
+            onComplete: () => {
+              clearTimeout(timeout);
+              console.log('Stream completed successfully');
+              console.log('Final text length:', fullText.length);
+              resolve();
+            },
+            onError: (error) => {
+              clearTimeout(timeout);
+              console.error('Stream error:', error);
+              reject(error);
+            }
+          });
+        } catch (err) {
           clearTimeout(timeout);
-          isComplete = true;
-          console.log('Stream completed successfully');
-          console.log('Final text length:', fullText.length);
-          resolve(fullText);
-        })
-        .catch((error) => {
-          clearTimeout(timeout);
-          console.error('Stream error:', error);
-          reject(error);
-        });
+          reject(err);
+        }
       });
-
-      // Wait for the stream to complete
-      await streamPromise;
       
       console.log('Stream completed, full text length:', fullText.length);
       console.log('Text preview:', fullText.substring(0, 100));
-
-      if (!isComplete) {
-        throw new Error('Stream did not complete properly');
-      }
 
       if (!fullText) {
         throw new Error('No content was generated');
@@ -110,8 +106,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           result: fullText,
-          length: fullText.length,
-          isComplete: isComplete
+          length: fullText.length
         }), 
         { headers: corsHeaders }
       );
