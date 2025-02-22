@@ -34,7 +34,7 @@ const tools: Tool[] = [
           type: {
             type: 'string',
             description: 'Type of widget to create',
-            enum: ['salesforce-tasks', 'sample']
+            enum: ['salesforce-tasks', 'slack-notifications', 'sample']
           },
           title: {
             type: 'string',
@@ -58,12 +58,11 @@ const tools: Tool[] = [
 const systemPrompt = `You are a helpful dashboard assistant that helps users create and manage widgets. 
 You have access to these tools:
 1. generate_widget_config: Use this to create widget configurations based on user requirements
-2. final_answer: Use this to provide a final response to the user
 
 Follow these steps for each user request:
-1. Understand the user's intent
-2. If they want to create/modify a widget, use generate_widget_config
-3. Always end with a final_answer explaining what you did
+1. Understand if they want to create/modify a widget
+2. If they do, use generate_widget_config to create appropriate configuration
+3. Provide a friendly response explaining what you did
 
 Be concise but friendly in your responses.`;
 
