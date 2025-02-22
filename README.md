@@ -1,5 +1,5 @@
 ## Inspiration
-Last week I had a call with the team in my project regarding new requirements from the business regarding displaying different stuff. Again. New version. It is always a compromise between different departments about dashboards, page layouts etc. I asked, there should be AI Agent that will prepare dynamic pages and then each User will see desired stuff. One girl replied: "Please do not say it to the business.". I will not say it to them. I will show it to them.
+Last week I had a call with the team in my project about new requirements from the business regarding displaying different business data. Again. New version. It is always a compromise between different departments about dashboards, page layouts etc. I said, "There should be AI Agent that prepares dynamic dashboards and then each User will see desired stuff.". One girl replied: "Please do not say it to the business.". I will not say it to them. I will show it to them.
 
 ## What it does
 dashpers allows  to create personalized business dashboards through natural language commands.
