@@ -75,9 +75,10 @@ export const Dashboard: React.FC = () => {
         },
         (payload: RealtimePostgresChangesPayload<WidgetData>) => {
           console.log('Widget deleted:', payload);
-          if (payload.old && 'id' in payload.old) {
+          const deletedId = payload.old?.id;
+          if (deletedId && typeof deletedId === 'string') {
             setWidgets(currentWidgets => 
-              currentWidgets.filter(widget => widget.id !== payload.old!.id)
+              currentWidgets.filter(widget => widget.id !== deletedId)
             );
           }
         }
