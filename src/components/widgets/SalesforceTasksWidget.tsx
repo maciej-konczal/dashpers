@@ -2,7 +2,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { WidgetConfig } from '@/types/widgets';
+import { WidgetConfig, SalesforceWidgetPreferences } from '@/types/widgets';
 import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 
@@ -20,14 +20,13 @@ export const SalesforceTasksWidget: React.FC<SalesforceTasksWidgetProps> = ({ co
     }
   });
 
-  const bgColor = config.preferences.color || 'bg-[#D3E4FD]';
+  const preferences = config.preferences as SalesforceWidgetPreferences;
+  const bgColor = preferences.backgroundColor || 'bg-white';
   
   return (
     <Card className={`widget ${bgColor} border-none`}>
       <CardHeader>
-        <CardTitle>
-          {config.preferences.emojis ? '📋 ' : ''}{config.title || 'Salesforce Tasks'}
-        </CardTitle>
+        <CardTitle>{config.title || 'Salesforce Tasks'}</CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading && (

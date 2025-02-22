@@ -1,18 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { WidgetRegistry } from './widgets/WidgetRegistry';
-import { WidgetConfig } from '@/types/widgets';
+import { WidgetConfig, WidgetType, WidgetPreferences } from '@/types/widgets';
 import { supabase } from '@/lib/supabase';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 interface WidgetData {
   id: string;
-  type: string;
+  type: WidgetType;
   title: string;
-  preferences: {
-    color?: string;
-    emojis?: boolean;
-  };
+  preferences: WidgetPreferences;
 }
 
 // Helper function to type-check if an object is a WidgetData
@@ -65,7 +62,7 @@ export const Dashboard: React.FC = () => {
               id: payload.new.id,
               type: payload.new.type,
               title: payload.new.title,
-              preferences: payload.new.preferences || {}
+              preferences: payload.new.preferences
             };
             setWidgets(currentWidgets => [...currentWidgets, newWidget]);
           }
@@ -102,7 +99,7 @@ export const Dashboard: React.FC = () => {
               id: payload.new.id,
               type: payload.new.type,
               title: payload.new.title,
-              preferences: payload.new.preferences || {}
+              preferences: payload.new.preferences
             };
             setWidgets(currentWidgets =>
               currentWidgets.map(widget =>
