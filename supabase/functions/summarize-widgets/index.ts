@@ -31,11 +31,11 @@ serve(async (req) => {
     console.log('Processing summary request with content:', content);
 
     const prompt = `
-Please provide a comprehensive summary of all the widget contents below. Each widget is separated by "---". Make sure to include key information from every widget:
+You are a very concise summarizer. Create a brief summary of all widget contents below, limited to a MAXIMUM of 4 sentences. Focus ONLY on the most critical information from each widget. Each widget is separated by "---". The summary should be clear and informative but extremely concise:
 
 ${content}
 
-Format the summary as a clear overview that captures the essential information from each widget. For Salesforce widgets, include details about all records shown.
+Remember: Respond with NO MORE than 4 sentences total, capturing only the most essential information.
     `.trim();
 
     const result = await fal.subscribe("fal-ai/any-llm", {
@@ -43,7 +43,7 @@ Format the summary as a clear overview that captures the essential information f
         model: "anthropic/claude-3.5-sonnet",
         prompt: prompt,
         temperature: 0.7,
-        max_tokens: 1000, // Increased to handle more content
+        max_tokens: 200, // Reduced to encourage shorter responses
       },
       logs: true,
       onQueueUpdate: (update) => {
