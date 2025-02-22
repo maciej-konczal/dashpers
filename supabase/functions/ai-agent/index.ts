@@ -34,10 +34,20 @@ serve(async (req) => {
     
     console.log('Processing summary request with content:', lastMessage.content);
 
+    const prompt = `
+Please provide a comprehensive summary of all the following widget contents. Make sure to include information from each widget:
+
+${lastMessage.content}
+
+Format the summary as a clear overview of all widgets' content, making sure no widget is left out.
+    `.trim();
+
     const result = await fal.subscribe("fal-ai/any-llm", {
       input: {
         model: "anthropic/claude-3.5-sonnet",
-        prompt: lastMessage.content,
+        prompt: prompt,
+        temperature: 0.7,
+        max_tokens: 500,
       },
       logs: true,
       onQueueUpdate: (update) => {
@@ -48,6 +58,8 @@ serve(async (req) => {
     if (!result.data?.output) {
       throw new Error('No output received from AI');
     }
+
+    console.log('Generated summary:', result.data.output);
 
     return new Response(
       JSON.stringify({ message: result.data.output }),
