@@ -7,6 +7,8 @@ const corsHeaders = {
   'Content-Type': 'application/json'
 };
 
+import { PicaAI } from '@picahq/ai';
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -21,30 +23,17 @@ serve(async (req) => {
       throw new Error('PICA_SECRET_KEY is not set');
     }
 
-    console.log('Making request to Pica API with prompt:', prompt);
-    
-    const response = await fetch('https://api.pica.io/v1/generate', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${pica_key}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt,
-        tool,
-        maxSteps,
-      }),
+    console.log('Initializing Pica with provided key');
+    const pica = new PicaAI(pica_key);
+
+    console.log('Executing Pica generate with prompt:', prompt);
+    const result = await pica.chat({
+      messages: [{ role: 'user', content: prompt }],
+      tool: tool,
+      maxSteps: maxSteps,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Pica API error response:', errorText);
-      throw new Error(`Pica API error: ${errorText}`);
-    }
-
-    const result = await response.json();
-    console.log('Pica API response successful:', result);
-
+    console.log('Pica generation successful:', result);
     return new Response(JSON.stringify({ result }), {
       headers: corsHeaders,
     });
