@@ -5,8 +5,7 @@ import { WidgetConfig } from '@/types/widgets';
 import { supabase } from '@/lib/supabase';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
-type WidgetPayload = RealtimePostgresChangesPayload<{
-  [key: string]: any;
+interface WidgetData {
   id: string;
   type: string;
   title: string;
@@ -14,7 +13,9 @@ type WidgetPayload = RealtimePostgresChangesPayload<{
     color?: string;
     emojis?: boolean;
   };
-}>;
+}
+
+type WidgetPayload = RealtimePostgresChangesPayload<WidgetData>;
 
 export const Dashboard: React.FC = () => {
   const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
@@ -45,13 +46,15 @@ export const Dashboard: React.FC = () => {
         },
         (payload: WidgetPayload) => {
           console.log('New widget inserted:', payload);
-          const newWidget: WidgetConfig = {
-            id: payload.new.id,
-            type: payload.new.type,
-            title: payload.new.title,
-            preferences: payload.new.preferences || {}
-          };
-          setWidgets(currentWidgets => [...currentWidgets, newWidget]);
+          if (payload.new) {
+            const newWidget: WidgetConfig = {
+              id: payload.new.id,
+              type: payload.new.type,
+              title: payload.new.title,
+              preferences: payload.new.preferences || {}
+            };
+            setWidgets(currentWidgets => [...currentWidgets, newWidget]);
+          }
         }
       )
       .on(
@@ -63,9 +66,11 @@ export const Dashboard: React.FC = () => {
         },
         (payload: WidgetPayload) => {
           console.log('Widget deleted:', payload);
-          setWidgets(currentWidgets => 
-            currentWidgets.filter(widget => widget.id !== payload.old.id)
-          );
+          if (payload.old?.id) {
+            setWidgets(currentWidgets => 
+              currentWidgets.filter(widget => widget.id !== payload.old!.id)
+            );
+          }
         }
       )
       .on(
@@ -77,17 +82,19 @@ export const Dashboard: React.FC = () => {
         },
         (payload: WidgetPayload) => {
           console.log('Widget updated:', payload);
-          const updatedWidget: WidgetConfig = {
-            id: payload.new.id,
-            type: payload.new.type,
-            title: payload.new.title,
-            preferences: payload.new.preferences || {}
-          };
-          setWidgets(currentWidgets =>
-            currentWidgets.map(widget =>
-              widget.id === updatedWidget.id ? updatedWidget : widget
-            )
-          );
+          if (payload.new) {
+            const updatedWidget: WidgetConfig = {
+              id: payload.new.id,
+              type: payload.new.type,
+              title: payload.new.title,
+              preferences: payload.new.preferences || {}
+            };
+            setWidgets(currentWidgets =>
+              currentWidgets.map(widget =>
+                widget.id === updatedWidget.id ? updatedWidget : widget
+              )
+            );
+          }
         }
       )
       .subscribe();
