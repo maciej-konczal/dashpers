@@ -30,6 +30,8 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
     fields_to_display = [],
   } = preferences;
 
+  console.log('Using background color:', backgroundColor);
+
   const { data: salesforceData, isLoading, error } = useQuery({
     queryKey: ['salesforce-data', config.id, soql_query],
     queryFn: async () => {
@@ -86,9 +88,9 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
     }
   };
 
-  // Create a wrapper div to handle the background and other styles
+  // Let's try using inline styles as a test to see if it's a CSS specificity issue
   return (
-    <div className={`${backgroundColor} rounded-lg shadow-lg min-h-[200px]`}>
+    <div style={{ backgroundColor: backgroundColor === 'bg-red' ? '#ef4444' : 'white' }} className="rounded-lg shadow-lg min-h-[200px]">
       <Card className="widget border-none shadow-none bg-transparent">
         <CardHeader className="bg-transparent">
           <CardTitle className="bg-transparent">{config.title || 'Salesforce Data'}</CardTitle>
