@@ -1,6 +1,6 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { Pica } from "https://esm.sh/@picahq/ai";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,6 +9,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -21,27 +22,18 @@ serve(async (req) => {
       throw new Error('PICA_SECRET_KEY is not set');
     }
 
-    // Call Pica API with the prompt
-    const response = await fetch('https://api.picahq.com/api/v1/generate', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${pica_key}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt,
-        tool,
-        maxSteps,
-      }),
+    console.log('Initializing Pica with provided key');
+    const pica = new Pica(pica_key);
+
+    console.log('Executing Pica generate with prompt:', prompt);
+    const result = await pica.generate({
+      prompt,
+      tool,
+      maxSteps,
     });
 
-    if (!response.ok) {
-      throw new Error(`Pica API error: ${await response.text()}`);
-    }
-
-    const data = await response.json();
-
-    return new Response(JSON.stringify({ result: data }), {
+    console.log('Pica generation successful');
+    return new Response(JSON.stringify({ result }), {
       headers: corsHeaders,
     });
   } catch (error) {

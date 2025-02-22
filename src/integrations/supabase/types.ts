@@ -126,6 +126,7 @@ export type Database = {
         | "calendar"
         | "chart"
         | "sample"
+        | "pica"
     }
     CompositeTypes: {
       [_ in never]: never
