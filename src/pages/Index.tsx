@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChatPanel } from '@/components/ChatPanel';
@@ -254,7 +253,7 @@ const Index = () => {
       </div>
 
       <Dialog open={showSummary} onOpenChange={setShowSummary}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Widgets Summary</DialogTitle>
             <DialogDescription>
@@ -267,7 +266,7 @@ const Index = () => {
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
             ) : (
-              <div className="prose max-w-none whitespace-pre-wrap">
+              <div className="prose max-w-none whitespace-pre-wrap overflow-y-auto max-h-[60vh]">
                 {summary || "No summary available"}
               </div>
             )}
