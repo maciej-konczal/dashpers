@@ -6,7 +6,7 @@ export interface WidgetPreferences {
 }
 
 export interface SalesforceWidgetPreferences extends WidgetPreferences {
-  backgroundColor?: string;
+  backgroundColor?: string; // Can be either a Tailwind class (bg-blue-500) or hex code (#3b82f6)
   soql_query?: string;
   show_totals?: boolean;
   chart_type?: 'table' | 'bar' | 'line';

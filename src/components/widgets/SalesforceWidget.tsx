@@ -33,6 +33,9 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
 
   console.log('Using background color:', backgroundColor);
 
+  // Check if the backgroundColor is a hex code (starts with #)
+  const isHexColor = backgroundColor.startsWith('#');
+
   const { data: salesforceData, isLoading, error } = useQuery({
     queryKey: ['salesforce-data', config.id, soql_query],
     queryFn: async () => {
@@ -91,9 +94,10 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
 
   return (
     <div 
+      style={isHexColor ? { backgroundColor } : undefined}
       className={cn(
         "rounded-lg shadow-lg min-h-[200px]",
-        backgroundColor // This will directly apply the Tailwind class
+        !isHexColor && backgroundColor // Only apply Tailwind class if not hex
       )}
     >
       <Card className="widget border-none shadow-none bg-transparent">
