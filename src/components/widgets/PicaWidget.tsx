@@ -66,11 +66,7 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
   return (
     <Card 
       className="widget" 
-      style={
-        config.preferences.backgroundColor?.startsWith('#') 
-          ? { backgroundColor: config.preferences.backgroundColor }
-          : undefined
-      }
+      style={{ backgroundColor: config.preferences.backgroundColor || '#ffffff' }}
     >
       <CardHeader>
         <CardTitle>{config.title}</CardTitle>

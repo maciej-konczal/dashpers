@@ -9,8 +9,8 @@ interface NoteWidgetProps {
 
 export const NoteWidget: React.FC<NoteWidgetProps> = ({ config }) => {
   const {
-    backgroundColor = 'white',
-    textColor = 'currentColor',
+    backgroundColor = '#ffffff',
+    textColor = '#000000',
     fontSize = 'text-base',
     fontFamily = 'font-sans',
     padding = 'p-4',
@@ -20,9 +20,7 @@ export const NoteWidget: React.FC<NoteWidgetProps> = ({ config }) => {
   return (
     <Card 
       className="widget" 
-      style={{
-        backgroundColor: backgroundColor.startsWith('#') ? backgroundColor : undefined
-      }}
+      style={{ backgroundColor }}
     >
       <CardHeader>
         <CardTitle>{config.title}</CardTitle>
@@ -30,9 +28,7 @@ export const NoteWidget: React.FC<NoteWidgetProps> = ({ config }) => {
       <CardContent>
         <div 
           className={`whitespace-pre-wrap ${fontSize} ${fontFamily} ${padding}`}
-          style={{
-            color: textColor.startsWith('#') ? textColor : undefined,
-          }}
+          style={{ color: textColor }}
         >
           {content}
         </div>
