@@ -8,7 +8,6 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Content-Type': 'application/json',
 };
 
 serve(async (req) => {
@@ -28,7 +27,6 @@ serve(async (req) => {
       throw new Error('Messages array is required and must be an array');
     }
 
-    // Format messages to ensure they have the correct structure
     const formattedMessages = body.messages.map(msg => ({
       role: msg.role || 'user',
       content: msg.content || ''
@@ -48,32 +46,32 @@ serve(async (req) => {
     const system = await pica.generateSystemPrompt();
     console.log('Generated system prompt');
 
-    // Create the stream
-    const stream = await streamText({
-      model: openai("gpt-4o"),
-      system,
-      tools: {
-        ...pica.oneTool,
-      },
-      messages: formattedMessages,
-      maxSteps: 20,
-    });
+    try {
+      // Create the stream
+      const stream = await streamText({
+        model: openai("gpt-4o"),
+        system,
+        tools: {
+          ...pica.oneTool,
+        },
+        messages: formattedMessages,
+        maxSteps: 20,
+      });
 
-    console.log('Stream created successfully');
-    
-    // Get the response from the stream
-    const response = stream.toDataStreamResponse();
-    
-    // Add CORS headers to the response
-    const headers = new Headers(response.headers);
-    Object.entries(corsHeaders).forEach(([key, value]) => {
-      headers.set(key, value);
-    });
-    
-    return new Response(response.body, {
-      status: response.status,
-      headers: headers,
-    });
+      console.log('Stream created successfully');
+
+      // Get the response
+      const result = await stream.finalText();
+      console.log('Got final result:', result);
+
+      return new Response(JSON.stringify({ result }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+
+    } catch (streamError) {
+      console.error('Stream error:', streamError);
+      throw streamError;
+    }
 
   } catch (error) {
     console.error('Detailed error in pica-agent:', {
@@ -91,7 +89,7 @@ serve(async (req) => {
       full_error: JSON.stringify(error, Object.getOwnPropertyNames(error))
     }), {
       status: 500,
-      headers: corsHeaders
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
