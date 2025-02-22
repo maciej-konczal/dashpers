@@ -1,8 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Pica } from "npm:@picahq/ai";
-import { openai } from "npm:@ai-sdk/openai";
-import { generateText } from "npm:ai";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,52 +28,36 @@ serve(async (req) => {
       );
     }
 
-    const pica_key = Deno.env.get('PICA_SECRET_KEY');
-    if (!pica_key) {
-      return new Response(
-        JSON.stringify({ error: 'PICA_SECRET_KEY is not set' }), 
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    // Initialize Pica client
-    console.log('Initializing Pica client...');
-    const pica = new Pica(pica_key);
-    console.log('Pica client initialized');
-
-    // Generate system prompt
-    console.log('Generating system prompt...');
-    const systemPrompt = await pica.generateSystemPrompt();
-    console.log('System prompt generated');
+    // For now using localhost, we'll change this URL later for production
+    const aiServiceUrl = 'http://localhost:3000/chat';
+    console.log('Sending request to:', aiServiceUrl);
 
     try {
-      console.log('Starting generateText...');
-      // Extract the user's message content from the messages array
-      const userMessage = messages.find(m => m.role === 'user')?.content;
-      
-      if (!userMessage) {
-        throw new Error('No user message found in messages array');
+      const response = await fetch(aiServiceUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messages }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI service responded with status: ${response.status}`);
       }
 
-      const { text } = await generateText({
-        model: openai("gpt-4"),
-        system: systemPrompt,
-        tools: pica.oneTool,
-        prompt: userMessage,
-        maxSteps: 5,
-      });
-      console.log('Text generated successfully');
+      const data = await response.json();
+      console.log('Received response from AI service:', data);
 
       return new Response(
-        JSON.stringify({ text }), 
+        JSON.stringify(data), 
         { headers: corsHeaders }
       );
 
     } catch (aiError) {
-      console.error('AI generation error:', aiError);
+      console.error('AI service error:', aiError);
       return new Response(
         JSON.stringify({ 
-          error: 'AI generation error', 
+          error: 'AI service error', 
           details: aiError.message 
         }), 
         { status: 500, headers: corsHeaders }
