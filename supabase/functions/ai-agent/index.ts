@@ -26,7 +26,32 @@ const tools = {
         },
         preferences: {
           type: "object",
-          description: "Widget-specific preferences like query, layout, etc"
+          description: "Widget-specific preferences. For Salesforce widgets, must include detailed configuration.",
+          example: {
+            "columns": [
+              {
+                "field": "Name",
+                "label": "Contact Name"
+              },
+              {
+                "field": "Email",
+                "label": "Email Address"
+              },
+              {
+                "field": "CreatedDate",
+                "label": "Created",
+                "format": "date"
+              }
+            ],
+            "chart_type": "table",
+            "soql_query": "SELECT Id, Name, Email, CreatedDate FROM Contact ORDER BY CreatedDate DESC",
+            "max_records": 5,
+            "object_type": "Contact",
+            "show_totals": true,
+            "backgroundColor": "bg-blue-100",
+            "refreshInterval": 300,
+            "fields_to_display": ["Name", "Email", "CreatedDate"]
+          }
         }
       },
       required: ["type", "title", "preferences"]
@@ -44,7 +69,28 @@ const tools = {
         },
         preferences: {
           type: "object",
-          description: "Any widget preferences that need to be updated. Can include visual properties (backgroundColor, etc), data configuration, or any other widget-specific settings."
+          description: "Any widget preferences that need to be updated. For Salesforce widgets, ensure all required fields are included.",
+          example: {
+            "columns": [
+              {
+                "field": "Name",
+                "label": "Account Name"
+              },
+              {
+                "field": "AnnualRevenue",
+                "label": "Revenue",
+                "format": "currency"
+              }
+            ],
+            "chart_type": "table",
+            "soql_query": "SELECT Id, Name, AnnualRevenue FROM Account ORDER BY AnnualRevenue DESC",
+            "max_records": 10,
+            "object_type": "Account",
+            "show_totals": true,
+            "backgroundColor": "#add8e6",
+            "refreshInterval": 300,
+            "fields_to_display": ["Name", "AnnualRevenue"]
+          }
         }
       },
       required: ["title"]
@@ -81,7 +127,60 @@ Always follow these rules:
 6. For ANY widget modifications in edit mode, use update_widget and include the changes in preferences
 7. IMPORTANT: When using update_widget, ALWAYS include the current widget's title unless specifically asked to change it
 8. If you don't understand the request or can't help, use final_answer to explain why
-9. VERY IMPORTANT: Your response MUST be valid JSON with all property names double-quoted`;
+9. VERY IMPORTANT: For Salesforce widgets, ALWAYS include these required fields in preferences:
+   - columns: array of column configurations with field, label, and optional format
+   - chart_type: usually "table" unless specifically requested otherwise
+   - soql_query: the SOQL query to fetch data
+   - max_records: number of records to display (default 5-10)
+   - object_type: the Salesforce object type being queried
+   - show_totals: boolean to show totals (default true)
+   - backgroundColor: either a hex color or Tailwind class
+   - refreshInterval: how often to refresh in seconds (default 300)
+   - fields_to_display: array of field names to display
+
+Here are some example widget configurations:
+
+FOR CONTACTS:
+{
+  "type": "salesforce",
+  "title": "Recent Contacts",
+  "preferences": {
+    "columns": [
+      {"field": "Name", "label": "Contact Name"},
+      {"field": "Email", "label": "Email"},
+      {"field": "Phone", "label": "Phone"}
+    ],
+    "chart_type": "table",
+    "soql_query": "SELECT Id, Name, Email, Phone FROM Contact ORDER BY CreatedDate DESC",
+    "max_records": 5,
+    "object_type": "Contact",
+    "show_totals": true,
+    "backgroundColor": "bg-blue-100",
+    "refreshInterval": 300,
+    "fields_to_display": ["Name", "Email", "Phone"]
+  }
+}
+
+FOR ACCOUNTS:
+{
+  "type": "salesforce",
+  "title": "Top Accounts",
+  "preferences": {
+    "columns": [
+      {"field": "Name", "label": "Account Name"},
+      {"field": "AnnualRevenue", "label": "Revenue", "format": "currency"},
+      {"field": "Industry", "label": "Industry"}
+    ],
+    "chart_type": "table",
+    "soql_query": "SELECT Id, Name, AnnualRevenue, Industry FROM Account ORDER BY AnnualRevenue DESC NULLS LAST",
+    "max_records": 5,
+    "object_type": "Account",
+    "show_totals": true,
+    "backgroundColor": "#add8e6",
+    "refreshInterval": 300,
+    "fields_to_display": ["Name", "AnnualRevenue", "Industry"]
+  }
+}`;
 
   if (currentWidget) {
     basePrompt += `\n\nCURRENT WIDGET CONTEXT:
@@ -187,6 +286,21 @@ serve(async (req) => {
     // Ensure title is preserved for widget updates
     if (toolCall.tool === 'update_widget' && currentWidget && !toolCall.parameters.title) {
       toolCall.parameters.title = currentWidget.title;
+    }
+
+    // Validate Salesforce widget configurations
+    if ((toolCall.tool === 'create_widget' || toolCall.tool === 'update_widget') && 
+        toolCall.parameters.type === 'salesforce') {
+      const prefs = toolCall.parameters.preferences;
+      if (!prefs.columns || !prefs.soql_query || !prefs.object_type) {
+        return new Response(JSON.stringify({
+          error: 'Invalid Salesforce widget configuration',
+          details: 'Missing required fields: columns, soql_query, or object_type'
+        }), {
+          status: 400,
+          headers: corsHeaders
+        });
+      }
     }
 
     return new Response(JSON.stringify({
