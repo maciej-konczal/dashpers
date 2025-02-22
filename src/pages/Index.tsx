@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChatPanel } from '@/components/ChatPanel';
@@ -10,6 +11,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(true);
 
   useEffect(() => {
     // Check current auth status
@@ -109,14 +111,16 @@ const Index = () => {
         </div>
         <Button onClick={handleLogout}>Logout</Button>
       </div>
-      <ChatPanel onCommand={handleCommand} editingWidgetId={editingWidgetId} />
-      <main className="pl-0 transition-all duration-300">
-        <Dashboard 
-          onEditWidget={handleEditWidget} 
-          editingWidgetId={editingWidgetId} 
-          onCancelEdit={handleCancelEdit}
-        />
-      </main>
+      <div className="flex">
+        <ChatPanel onCommand={handleCommand} editingWidgetId={editingWidgetId} />
+        <main className={`flex-1 transition-all duration-300 ml-[320px]`}>
+          <Dashboard 
+            onEditWidget={handleEditWidget} 
+            editingWidgetId={editingWidgetId} 
+            onCancelEdit={handleCancelEdit}
+          />
+        </main>
+      </div>
     </div>
   );
 };

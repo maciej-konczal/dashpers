@@ -35,13 +35,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onCommand, editingWidgetId
         </Button>
       )}
       <div
-        className={`fixed left-0 top-0 h-full w-80 bg-white/80 backdrop-blur-xl border-r shadow-lg transition-transform duration-300 z-40
+        className={`fixed left-0 top-0 h-full w-80 bg-white/80 backdrop-blur-xl border-r shadow-lg transition-all duration-300 z-40
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="flex flex-col h-full p-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">
-              {editingWidgetId ? 'Edit Widget' : 'Dashboard Assistant'}
+              {editingWidgetId ? 'Edit Widget' : 'Dashboard Builder'}
             </h2>
             <Button
               onClick={() => setIsOpen(false)}
