@@ -6,6 +6,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Process base64 conversion in chunks to prevent stack overflow
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const chunks: string[] = [];
+  const chunk_size = 8192; // Process 8KB at a time
+  const uint8Array = new Uint8Array(buffer);
+  
+  for (let i = 0; i < uint8Array.length; i += chunk_size) {
+    const chunk = uint8Array.slice(i, i + chunk_size);
+    chunks.push(String.fromCharCode.apply(null, chunk));
+  }
+  
+  return btoa(chunks.join(''));
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -22,7 +36,6 @@ serve(async (req) => {
       throw new Error('Text is required')
     }
 
-    // Using George's voice ID by default
     const voiceId = 'JBFqnCBsd6RMkjVDRZzb';
     console.log('Using voice ID:', voiceId);
 
@@ -63,9 +76,8 @@ serve(async (req) => {
     const arrayBuffer = await response.arrayBuffer();
     console.log('Audio size:', arrayBuffer.byteLength, 'bytes');
 
-    const base64Audio = btoa(
-      String.fromCharCode(...new Uint8Array(arrayBuffer))
-    );
+    console.log('Converting audio to base64 in chunks...');
+    const base64Audio = arrayBufferToBase64(arrayBuffer);
     console.log('Successfully converted audio to base64');
 
     return new Response(
