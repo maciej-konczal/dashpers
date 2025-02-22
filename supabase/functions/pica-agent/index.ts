@@ -54,8 +54,10 @@ serve(async (req) => {
     console.log('Generated system prompt');
 
     try {
-      // Create the stream
-      const stream = await streamText({
+      // Create the stream with a callback to handle chunks
+      let fullText = '';
+      
+      await streamText({
         model: openai("gpt-4o"),
         system,
         tools: {
@@ -63,19 +65,13 @@ serve(async (req) => {
         },
         messages: formattedMessages,
         maxSteps: body.maxSteps || 20,
+        onTextContent: (content: string) => {
+          console.log('Received chunk:', content);
+          fullText += content;
+        },
       });
 
-      console.log('Stream created successfully');
-
-      // Collect all chunks from the stream
-      let fullText = '';
-      for await (const chunk of stream) {
-        if (typeof chunk === 'string') {
-          fullText += chunk;
-        }
-      }
-
-      console.log('Got full text:', fullText);
+      console.log('Stream completed, full text:', fullText);
 
       // Return the result as a properly formatted JSON response
       return new Response(
