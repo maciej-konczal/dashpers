@@ -1,12 +1,20 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React from 'react';
+import { ChatPanel } from '@/components/ChatPanel';
+import { Dashboard } from '@/components/Dashboard';
 
 const Index = () => {
+  const handleCommand = (command: string) => {
+    console.log("Received command:", command);
+    // Here we'll later integrate with AI to process commands
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <ChatPanel onCommand={handleCommand} />
+      <main className="pl-0 transition-all duration-300">
+        <Dashboard />
+      </main>
     </div>
   );
 };
