@@ -121,12 +121,21 @@ serve(async (req) => {
       }
     }
 
-    // Use provided query or fallback to default
-    const maxRecords = body.maxRecords || 10;
-    const query = `SELECT Id, Subject, Status, ActivityDate FROM Task WHERE OwnerId = '${userId}' ORDER BY ActivityDate DESC LIMIT ${maxRecords}`;
+    if (!body.query) {
+      throw new Error('No query provided in request body');
+    }
+
+    // Replace any :currentUserId placeholder with the actual user ID
+    const query = body.query.replace(':currentUserId', `'${userId}'`);
     
-    console.log('Executing query:', query);
-    const data = await executeSalesforceQuery(auth, query);
+    // Add LIMIT clause if not present and maxRecords is specified
+    const maxRecords = body.maxRecords || 10;
+    const finalQuery = query.toLowerCase().includes('limit') 
+      ? query 
+      : `${query} LIMIT ${maxRecords}`;
+    
+    console.log('Executing query:', finalQuery);
+    const data = await executeSalesforceQuery(auth, finalQuery);
     
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
