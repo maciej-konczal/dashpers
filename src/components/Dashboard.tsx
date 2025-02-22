@@ -1,28 +1,31 @@
 
-import React, { useState } from 'react';
-import { SampleWidget } from './widgets/SampleWidget';
-
-interface Widget {
-  id: string;
-  type: string;
-  data?: any;
-}
+import React, { useState, useEffect } from 'react';
+import { WidgetRegistry } from './widgets/WidgetRegistry';
+import { WidgetConfig } from '@/types/widgets';
+import { supabase } from '@/lib/supabase';
 
 export const Dashboard: React.FC = () => {
-  const [widgets, setWidgets] = useState<Widget[]>([]);
+  const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
 
-  const addWidget = (type: string, data?: any) => {
-    setWidgets(prev => [...prev, {
-      id: Math.random().toString(36).substr(2, 9),
-      type,
-      data
-    }]);
-  };
+  // Fetch widgets from Supabase on component mount
+  useEffect(() => {
+    const fetchWidgets = async () => {
+      const { data, error } = await supabase
+        .from('widgets')
+        .select('*');
+      
+      if (!error && data) {
+        setWidgets(data);
+      }
+    };
+
+    fetchWidgets();
+  }, []);
 
   return (
     <div className="dashboard-grid">
       {widgets.map(widget => (
-        <SampleWidget key={widget.id} data={widget.data} />
+        <WidgetRegistry key={widget.id} config={widget} />
       ))}
     </div>
   );

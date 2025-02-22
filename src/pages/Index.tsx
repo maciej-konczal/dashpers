@@ -2,11 +2,37 @@
 import React from 'react';
 import { ChatPanel } from '@/components/ChatPanel';
 import { Dashboard } from '@/components/Dashboard';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 const Index = () => {
-  const handleCommand = (command: string) => {
+  const handleCommand = async (command: string) => {
     console.log("Received command:", command);
-    // Here we'll later integrate with AI to process commands
+    
+    // Basic command parsing
+    if (command.toLowerCase().includes('salesforce tasks')) {
+      const preferences = {
+        color: command.includes('light blue') ? 'bg-[#D3E4FD]' : undefined,
+        emojis: command.toLowerCase().includes('emoji'),
+      };
+
+      // Create new widget in Supabase
+      const { error } = await supabase
+        .from('widgets')
+        .insert({
+          type: 'salesforce-tasks',
+          title: 'My Salesforce Tasks',
+          preferences,
+          created_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        toast.error('Failed to create widget');
+        return;
+      }
+
+      toast.success('Widget added to dashboard!');
+    }
   };
 
   return (
