@@ -1,12 +1,12 @@
 
-export type WidgetType = 'salesforce' | 'pica';
+export type WidgetType = 'salesforce' | 'pica' | 'note';
 
 export interface WidgetPreferences {
   [key: string]: any;
 }
 
 export interface SalesforceWidgetPreferences extends WidgetPreferences {
-  backgroundColor?: string; // Can be either a Tailwind class (bg-blue-500) or hex code (#3b82f6)
+  backgroundColor?: string;
   soql_query?: string;
   show_totals?: boolean;
   chart_type?: 'table' | 'bar' | 'line';
@@ -21,6 +21,15 @@ export interface PicaWidgetPreferences extends WidgetPreferences {
   maxSteps?: number;
   backgroundColor?: string;
   refreshInterval?: number;
+}
+
+export interface NoteWidgetPreferences extends WidgetPreferences {
+  content: string;
+  backgroundColor?: string;
+  textColor?: string;
+  fontSize?: string;
+  fontFamily?: string;
+  padding?: string;
 }
 
 export interface WidgetConfig {

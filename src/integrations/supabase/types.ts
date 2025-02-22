@@ -127,6 +127,7 @@ export type Database = {
         | "chart"
         | "sample"
         | "pica"
+        | "note"
     }
     CompositeTypes: {
       [_ in never]: never
