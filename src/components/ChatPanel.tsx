@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowLeftFromLine, ArrowRightFromLine } from 'lucide-react';
+import { ArrowLeftFromLine, Pencil } from 'lucide-react';
 import { ChatMessages } from './chat/ChatMessages';
 import { ChatInput } from './chat/ChatInput';
 import { useChat } from '@/hooks/use-chat';
@@ -26,11 +27,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onCommand, editingWidgetId
       {!isOpen && (
         <Button
           onClick={() => setIsOpen(true)}
-          className="fixed left-4 top-4 z-50"
+          className="fixed left-4 bottom-4 z-50"
           size="icon"
           variant="outline"
         >
-          <ArrowRightFromLine className="h-4 w-4" />
+          <Pencil className="h-4 w-4" />
         </Button>
       )}
       <div
