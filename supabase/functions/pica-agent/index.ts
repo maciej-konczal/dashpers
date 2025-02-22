@@ -8,6 +8,7 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Content-Type': 'application/json'
 };
 
 serve(async (req) => {
@@ -24,7 +25,10 @@ serve(async (req) => {
     console.log('Received body:', body);
 
     if (!body.messages || !Array.isArray(body.messages)) {
-      throw new Error('Messages array is required and must be an array');
+      return new Response(
+        JSON.stringify({ error: 'Messages array is required and must be an array' }), 
+        { status: 400, headers: corsHeaders }
+      );
     }
 
     const formattedMessages = body.messages.map(msg => ({
@@ -36,7 +40,10 @@ serve(async (req) => {
 
     const pica_key = Deno.env.get('PICA_SECRET_KEY');
     if (!pica_key) {
-      throw new Error('PICA_SECRET_KEY is not set');
+      return new Response(
+        JSON.stringify({ error: 'PICA_SECRET_KEY is not set' }), 
+        { status: 500, headers: corsHeaders }
+      );
     }
 
     // Initialize Pica client
@@ -55,41 +62,37 @@ serve(async (req) => {
           ...pica.oneTool,
         },
         messages: formattedMessages,
-        maxSteps: 20,
+        maxSteps: body.maxSteps || 20,
       });
 
       console.log('Stream created successfully');
 
-      // Get the response
+      // Get the final text response
       const result = await stream.finalText();
       console.log('Got final result:', result);
 
-      return new Response(JSON.stringify({ result }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      // Return the result as a properly formatted JSON response
+      return new Response(
+        JSON.stringify({ result }), 
+        { headers: corsHeaders }
+      );
 
     } catch (streamError) {
       console.error('Stream error:', streamError);
-      throw streamError;
+      return new Response(
+        JSON.stringify({ error: 'Stream error', details: streamError.message }), 
+        { status: 500, headers: corsHeaders }
+      );
     }
 
   } catch (error) {
-    console.error('Detailed error in pica-agent:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      type: typeof error,
-      errorObject: JSON.stringify(error, Object.getOwnPropertyNames(error))
-    });
-    
-    return new Response(JSON.stringify({ 
-      error: error.message,
-      details: error.stack,
-      name: error.name,
-      full_error: JSON.stringify(error, Object.getOwnPropertyNames(error))
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    console.error('Error in pica-agent:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: 'Internal server error',
+        message: error.message 
+      }), 
+      { status: 500, headers: corsHeaders }
+    );
   }
 });
