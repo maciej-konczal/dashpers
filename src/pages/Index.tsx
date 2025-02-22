@@ -48,36 +48,59 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const formatWidgetContent = (widget: any) => {
+    let content = widget.content;
+    
+    try {
+      // First try to parse the content if it's JSON
+      const parsedContent = JSON.parse(content);
+      
+      if (widget.type === 'salesforce') {
+        // Handle Salesforce widget data
+        if (Array.isArray(parsedContent)) {
+          content = parsedContent.map(record => 
+            Object.entries(record)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join(', ')
+          ).join('\n');
+        }
+      } else if (widget.type === 'calendar') {
+        // Handle Calendar widget data
+        content = parsedContent.events?.map((event: any) => 
+          `Event: "${event.title}" on ${event.date} at ${event.time}`
+        ).join('\n') || content;
+      } else if (widget.type === 'weather') {
+        // Handle Weather widget data
+        const weather = parsedContent;
+        content = [
+          `Condition: ${weather.condition || 'N/A'}`,
+          `Temperature: ${weather.temperature || 'N/A'}`,
+          `Humidity: ${weather.humidity || 'N/A'}`,
+          `Wind: ${weather.wind || 'N/A'}`,
+          `Visibility: ${weather.visibility || 'N/A'}`,
+          weather.precipitation ? `Precipitation: ${weather.precipitation}` : '',
+        ].filter(Boolean).join('\n');
+      }
+    } catch (e) {
+      // If parsing fails, use the content as is
+      console.log('Content parsing failed for widget', widget.title, e);
+    }
+    
+    return `${widget.title} (${widget.type}):\n${content}`;
+  };
+
   const summarizeWidgets = async () => {
     setIsSummarizing(true);
     setSummary('');
     setShowSummary(true);
     
     try {
-      // Format content based on widget type
+      // Format all widgets with proper type handling
       const formattedContent = widgetContents
-        .map(w => {
-          let content = w.content;
-          
-          // For Salesforce widgets, ensure we capture all records
-          if (w.type === 'salesforce') {
-            try {
-              const data = JSON.parse(content);
-              if (Array.isArray(data)) {
-                content = data.map(record => 
-                  Object.entries(record)
-                    .map(([key, value]) => `${key}: ${value}`)
-                    .join(', ')
-                ).join('\n');
-              }
-            } catch (e) {
-              console.error('Error parsing Salesforce data:', e);
-            }
-          }
-          
-          return `${w.title} (${w.type}):\n${content}`;
-        })
-        .join('\n\n---\n\n'); // Better separation between widgets
+        .map(formatWidgetContent)
+        .join('\n\n---\n\n'); // Clear separation between widgets
+
+      console.log('Formatted content for summary:', formattedContent);
 
       const { data, error } = await supabase.functions.invoke('summarize-widgets', {
         body: { content: formattedContent }
