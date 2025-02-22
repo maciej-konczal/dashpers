@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Pica } from "npm:@picahq/ai";
 import { openai } from "npm:@ai-sdk/openai";
-import { convertToCoreMessages, streamText } from "npm:ai";
+import { streamText } from "npm:ai";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,8 +17,20 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
-    console.log('Received messages:', messages);
+    const body = await req.json();
+    console.log('Received body:', body);
+
+    if (!body.messages || !Array.isArray(body.messages)) {
+      throw new Error('Messages array is required and must be an array');
+    }
+
+    // Format messages to ensure they have the correct structure
+    const formattedMessages = body.messages.map(msg => ({
+      role: msg.role || 'user',
+      content: msg.content || ''
+    }));
+
+    console.log('Formatted messages:', formattedMessages);
 
     const pica_key = Deno.env.get('PICA_SECRET_KEY');
     if (!pica_key) {
@@ -39,7 +51,7 @@ serve(async (req) => {
       tools: {
         ...pica.oneTool,
       },
-      messages: convertToCoreMessages(messages),
+      messages: formattedMessages,
       maxSteps: 20,
     });
 
@@ -59,7 +71,6 @@ serve(async (req) => {
       error: error.message,
       details: error.stack,
       name: error.name,
-      cause: error.cause,
       full_error: JSON.stringify(error, Object.getOwnPropertyNames(error))
     }), {
       status: 500,
