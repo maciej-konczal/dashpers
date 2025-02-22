@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { WidgetConfig } from '@/types/widgets';
 import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
+import { useWidgetStore } from '@/stores/widgetStore';
 
 interface PicaWidgetProps {
   config: WidgetConfig;
@@ -13,6 +14,7 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const addContent = useWidgetStore(state => state.addContent);
 
   const fetchPicaResult = async () => {
     try {
@@ -21,7 +23,6 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
 
       const { prompt, tool, maxSteps = 5 } = config.preferences;
 
-      // Format the messages array properly
       const messages = [{
         role: 'user',
         content: prompt
@@ -36,15 +37,22 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
       });
 
       if (picaError) {
-        // Check if it's a service limit error (non-2xx status)
         if (picaError.message?.includes('non-2xx status code')) {
           throw new Error('Service not available. We are using free plans for now.');
         }
         throw picaError;
       }
 
-      // Handle both response formats (data.text or data.response)
-      setResult(data.response || data.text);
+      const resultText = data.response || data.text;
+      setResult(resultText);
+      
+      // Store the content in the widget store
+      addContent({
+        id: config.id,
+        title: config.title,
+        type: 'pica',
+        content: typeof resultText === 'string' ? resultText : JSON.stringify(resultText)
+      });
     } catch (err) {
       console.error('Error fetching Pica result:', err);
       setError(err.message);
@@ -56,7 +64,6 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
   useEffect(() => {
     fetchPicaResult();
 
-    // Set up refresh interval if specified
     if (config.preferences.refreshInterval) {
       const interval = setInterval(fetchPicaResult, config.preferences.refreshInterval * 1000);
       return () => clearInterval(interval);

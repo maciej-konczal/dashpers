@@ -6,12 +6,24 @@ import { Dashboard } from '@/components/Dashboard';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Loader2 } from 'lucide-react';
+import { useWidgetStore } from '@/stores/widgetStore';
 
 const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(true);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [summary, setSummary] = useState<string>('');
+  const [showSummary, setShowSummary] = useState(false);
+  const widgetContents = useWidgetStore((state) => state.contents);
 
   useEffect(() => {
     // Check current auth status
@@ -34,6 +46,46 @@ const Index = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const summarizeWidgets = async () => {
+    setIsSummarizing(true);
+    setSummary('');
+    setShowSummary(true);
+    
+    try {
+      // Format the content for the summary
+      const formattedContent = widgetContents
+        .map(w => `${w.title} (${w.type}):\n${w.content}`)
+        .join('\n\n');
+
+      const prompt = `Please provide a concise summary of these widget contents:\n\n${formattedContent}`;
+
+      const response = await fetch('https://fal.run/fal-ai/claude-instant-1', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Key ${import.meta.env.VITE_FAL_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt,
+          max_tokens: 500,
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate summary');
+      }
+
+      const data = await response.json();
+      setSummary(data.response);
+    } catch (error) {
+      console.error('Error generating summary:', error);
+      toast.error('Failed to generate summary');
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
 
   const handleCommand = async (command: string) => {
     console.log("Received command:", command);
@@ -83,7 +135,7 @@ const Index = () => {
 
   const handleEditWidget = (widgetId: string) => {
     setEditingWidgetId(widgetId);
-    setIsChatOpen(true); // Always open chat when editing
+    setIsChatOpen(true);
     toast.info("Edit mode activated. Describe your changes in the chat.");
   };
 
@@ -110,7 +162,16 @@ const Index = () => {
         <div className="flex items-center gap-2">
           <span className="text-3xl font-['Roboto'] font-bold text-black">—pers</span>
         </div>
-        <Button onClick={handleLogout}>Logout</Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline"
+            onClick={summarizeWidgets}
+            disabled={widgetContents.length === 0}
+          >
+            Summarize Widgets
+          </Button>
+          <Button onClick={handleLogout}>Logout</Button>
+        </div>
       </div>
       <div className="flex">
         <ChatPanel 
@@ -127,6 +188,25 @@ const Index = () => {
           />
         </main>
       </div>
+
+      <Dialog open={showSummary} onOpenChange={setShowSummary}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Widgets Summary</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            {isSummarizing ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : (
+              <div className="prose max-w-none">
+                {summary || "No summary available"}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
