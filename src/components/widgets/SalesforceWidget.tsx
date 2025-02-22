@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { WidgetConfig, SalesforceWidgetPreferences } from '@/types/widgets';
 import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -13,16 +14,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-const tailwindToHex: Record<string, string> = {
-  'bg-red': '#ef4444',    // red-500
-  'bg-blue': '#3b82f6',   // blue-500
-  'bg-green': '#22c55e',  // green-500
-  'bg-yellow': '#eab308', // yellow-500
-  'bg-purple': '#a855f7', // purple-500
-  'bg-white': '#ffffff',
-  'bg-gray': '#6b7280',   // gray-500
-};
 
 interface SalesforceWidgetProps {
   config: WidgetConfig;
@@ -100,10 +91,10 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
 
   return (
     <div 
-      style={{ 
-        backgroundColor: tailwindToHex[backgroundColor] || tailwindToHex['bg-white']
-      }} 
-      className="rounded-lg shadow-lg min-h-[200px]"
+      className={cn(
+        "rounded-lg shadow-lg min-h-[200px]",
+        backgroundColor // This will directly apply the Tailwind class
+      )}
     >
       <Card className="widget border-none shadow-none bg-transparent">
         <CardHeader className="bg-transparent">
