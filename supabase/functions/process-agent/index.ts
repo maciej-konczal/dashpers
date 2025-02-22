@@ -85,18 +85,18 @@ serve(async (req) => {
     ];
 
     // Call fal.ai API with the correct endpoint and parameters
-    const response = await fetch('https://rest.fal.ai/fal/v1/chat', {
+    const response = await fetch('https://rest.fal.ai/v1/chat', {
       method: 'POST',
       headers: {
         'Authorization': `Key ${FAL_AI_KEY}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
       },
       body: JSON.stringify({
         messages: formattedMessages,
-        tools,
-        tool_choice: 'auto',
+        functions: tools.map(t => t.function),
         model: 'claude-3-opus',
-        temperature: 0.7
+        stream: false
       })
     });
 
@@ -108,13 +108,13 @@ serve(async (req) => {
     console.log('Fal.ai Response:', data);
 
     let widgetConfig = null;
-    let finalMessage = data.message.content;
+    let finalMessage = data.content;
 
-    // Parse tool calls if any
-    if (data.message.tool_calls && data.message.tool_calls.length > 0) {
-      for (const toolCall of data.message.tool_calls) {
-        if (toolCall.function.name === 'generate_widget_config') {
-          widgetConfig = JSON.parse(toolCall.function.arguments);
+    // Parse function calls if any
+    if (data.function_calls && data.function_calls.length > 0) {
+      for (const functionCall of data.function_calls) {
+        if (functionCall.name === 'generate_widget_config') {
+          widgetConfig = JSON.parse(functionCall.arguments);
         }
       }
     }
