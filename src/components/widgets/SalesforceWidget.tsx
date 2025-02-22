@@ -19,7 +19,12 @@ interface SalesforceWidgetProps {
 }
 
 export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) => {
+  console.log('Full config:', config);
+  console.log('Raw preferences:', config.preferences);
+  
   const preferences = config.preferences as SalesforceWidgetPreferences;
+  console.log('Parsed preferences:', preferences);
+  
   const {
     backgroundColor = 'bg-white',
     soql_query,
@@ -28,6 +33,9 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
     max_records = 10,
     fields_to_display = [],
   } = preferences;
+
+  console.log('Extracted backgroundColor:', backgroundColor);
+  console.log('Final className that will be used:', `${backgroundColor}!important widget border-none`);
 
   const { data: salesforceData, isLoading, error } = useQuery({
     queryKey: ['salesforce-data', config.id, soql_query],
