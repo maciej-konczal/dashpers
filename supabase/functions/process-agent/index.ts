@@ -1,8 +1,14 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { fal } from "npm:@fal-ai/client";
 
 const FAL_AI_KEY = Deno.env.get('FAL_AI_KEY');
+
+// Configure fal client
+fal.config({
+  credentials: FAL_AI_KEY,
+});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -83,43 +89,40 @@ serve(async (req) => {
 
     const prompt = `${systemPrompt}\n\n${conversation}\n\nHuman: ${messages[messages.length - 1].content}\n\nAssistant:`;
 
-    console.log('Sending request to fal.ai with prompt:', prompt);
+    console.log('Starting fal.ai stream with prompt:', prompt);
 
-    // Call fal.ai API with the any-llm endpoint
-    const response = await fetch('https://rest.fal.ai/v1/models/fal-ai/any-llm', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Key ${FAL_AI_KEY}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        prompt,
-        model: "anthropic/claude-3-sonnet"
-      })
+    // Use fal.ai client to stream the response
+    const stream = await fal.stream('fal-ai/any-llm', {
+      input: {
+        model: "anthropic/claude-3-sonnet",
+        prompt: prompt,
+      }
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Fal.ai error response:', errorText);
-      throw new Error(`fal.ai API error: ${response.status} ${response.statusText} - ${errorText}`);
+    let fullResponse = '';
+    for await (const event of stream) {
+      if (event.type === 'message') {
+        fullResponse += event.data;
+      }
     }
 
-    const data = await response.json();
-    console.log('Fal.ai Response:', data);
+    // Wait for the stream to complete
+    await stream.done();
+
+    console.log('Fal.ai Response:', fullResponse);
 
     let widgetConfig = null;
-    let finalMessage = data.output;
+    let finalMessage = fullResponse;
 
     // Check for function calls in the response
-    const functionCallMatch = data.output.match(/\{[\s\S]*\}/);
+    const functionCallMatch = fullResponse.match(/\{[\s\S]*\}/);
     if (functionCallMatch) {
       try {
         const functionCallData = JSON.parse(functionCallMatch[0]);
         if (functionCallData.type && functionCallData.title) {
           widgetConfig = functionCallData;
           // Remove the function call JSON from the message
-          finalMessage = data.output.replace(functionCallMatch[0], '').trim();
+          finalMessage = fullResponse.replace(functionCallMatch[0], '').trim();
         }
       } catch (e) {
         console.error('Error parsing function call:', e);
