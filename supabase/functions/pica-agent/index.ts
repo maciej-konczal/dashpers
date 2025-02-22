@@ -4,7 +4,6 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Accept': 'application/json',
   'Content-Type': 'application/json'
 };
 
@@ -24,12 +23,12 @@ serve(async (req) => {
     }
     console.log('PICA_SECRET_KEY found with length:', pica_key.length);
 
-    // Following Pica's official format
+    // Using Pica's newer API format
     const requestBody = {
-      model: "gpt-4o-mini",
+      model: "gpt-4",
       messages: [{ role: 'user', content: prompt }],
-      tools: "pica.oneTool", // Using the oneTool as specified
-      maxSteps: maxSteps
+      tools: ["pica.oneTool"], // Updated format for tools
+      max_steps: maxSteps // Using snake_case as per API
     };
     console.log('Preparing request body:', JSON.stringify(requestBody, null, 2));
 
@@ -37,19 +36,18 @@ serve(async (req) => {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${pica_key}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(requestBody)
     };
     console.log('Request configuration:', {
-      url: 'https://picahq.com/api/v1/chat',
+      url: 'https://api.picahq.com/v1/chat/completions',
       method: requestConfig.method,
       headers: Object.keys(requestConfig.headers)
     });
 
     console.log('Initiating fetch request to Pica API...');
-    const response = await fetch('https://picahq.com/api/v1/chat', requestConfig);
+    const response = await fetch('https://api.picahq.com/v1/chat/completions', requestConfig);
     console.log('Response status:', response.status);
 
     if (!response.ok) {
