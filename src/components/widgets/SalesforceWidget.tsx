@@ -6,6 +6,7 @@ import { WidgetConfig, SalesforceWidgetPreferences } from '@/types/widgets';
 import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { format } from 'date-fns';
 import {
   Table,
   TableBody,
@@ -14,6 +15,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+interface Column {
+  field: string;
+  label: string;
+  format?: 'date';
+}
 
 interface SalesforceWidgetProps {
   config: WidgetConfig;
@@ -28,7 +35,7 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
     show_totals = false,
     chart_type = 'table',
     max_records = 10,
-    fields_to_display = [],
+    columns = [],
   } = preferences;
 
   console.log('Using background color:', backgroundColor);
@@ -50,28 +57,44 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
     }
   });
 
+  const formatValue = (value: any, format?: string) => {
+    if (value === null || value === undefined) return '';
+    
+    if (format === 'date' && value) {
+      try {
+        return format(new Date(value), 'MMM dd, yyyy');
+      } catch (e) {
+        console.error('Error formatting date:', e);
+        return value;
+      }
+    }
+    
+    return value.toString();
+  };
+
   const renderTableView = (data: any[]) => {
     if (!data || data.length === 0) return <p>No data available</p>;
 
-    const fields = fields_to_display.length > 0 
-      ? fields_to_display 
-      : Object.keys(data[0]);
+    // Use columns configuration if available, otherwise fall back to all fields
+    const displayColumns: Column[] = columns.length > 0 
+      ? columns 
+      : Object.keys(data[0]).map(field => ({ field, label: field }));
 
     return (
       <Table>
         <TableHeader>
           <TableRow>
-            {fields.map((field) => (
-              <TableHead key={field}>{field}</TableHead>
+            {displayColumns.map((column) => (
+              <TableHead key={column.field}>{column.label}</TableHead>
             ))}
           </TableRow>
         </TableHeader>
         <TableBody>
           {data.map((record, index) => (
             <TableRow key={record.Id || index}>
-              {fields.map((field) => (
-                <TableCell key={`${record.Id}-${field}`}>
-                  {record[field]?.toString() || ''}
+              {displayColumns.map((column) => (
+                <TableCell key={`${record.Id}-${column.field}`}>
+                  {formatValue(record[column.field], column.format)}
                 </TableCell>
               ))}
             </TableRow>

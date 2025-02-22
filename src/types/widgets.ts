@@ -5,13 +5,19 @@ export interface WidgetPreferences {
   [key: string]: any;
 }
 
+interface SalesforceColumn {
+  field: string;
+  label: string;
+  format?: 'date';
+}
+
 export interface SalesforceWidgetPreferences extends WidgetPreferences {
   backgroundColor?: string;
   soql_query?: string;
   show_totals?: boolean;
   chart_type?: 'table' | 'bar' | 'line';
   max_records?: number;
-  fields_to_display?: string[];
+  columns?: SalesforceColumn[];
   refreshInterval?: number;
 }
 
