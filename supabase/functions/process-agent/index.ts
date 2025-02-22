@@ -83,22 +83,26 @@ serve(async (req) => {
 
     const prompt = `${systemPrompt}\n\n${conversation}\n\nHuman: ${messages[messages.length - 1].content}\n\nAssistant:`;
 
+    console.log('Sending request to fal.ai with prompt:', prompt);
+
     // Call fal.ai API with the any-llm endpoint
     const response = await fetch('https://rest.fal.ai/v1/models/fal-ai/any-llm', {
       method: 'POST',
       headers: {
         'Authorization': `Key ${FAL_AI_KEY}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
-        model: "anthropic/claude-3-sonnet",
-        prompt: prompt,
-        functions: tools.map(t => t.function)
+        prompt,
+        model: "anthropic/claude-3-sonnet"
       })
     });
 
     if (!response.ok) {
-      throw new Error(`fal.ai API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Fal.ai error response:', errorText);
+      throw new Error(`fal.ai API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
