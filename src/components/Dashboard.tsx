@@ -15,7 +15,16 @@ interface WidgetData {
   };
 }
 
-type WidgetPayload = RealtimePostgresChangesPayload<WidgetData>;
+// Helper function to type-check if an object is a WidgetData
+function isWidgetData(data: any): data is WidgetData {
+  return (
+    data &&
+    typeof data.id === 'string' &&
+    typeof data.type === 'string' &&
+    typeof data.title === 'string' &&
+    typeof data.preferences === 'object'
+  );
+}
 
 export const Dashboard: React.FC = () => {
   const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
@@ -44,9 +53,9 @@ export const Dashboard: React.FC = () => {
           schema: 'public',
           table: 'widgets'
         },
-        (payload: WidgetPayload) => {
+        (payload: RealtimePostgresChangesPayload<WidgetData>) => {
           console.log('New widget inserted:', payload);
-          if (payload.new) {
+          if (payload.new && isWidgetData(payload.new)) {
             const newWidget: WidgetConfig = {
               id: payload.new.id,
               type: payload.new.type,
@@ -64,9 +73,9 @@ export const Dashboard: React.FC = () => {
           schema: 'public',
           table: 'widgets'
         },
-        (payload: WidgetPayload) => {
+        (payload: RealtimePostgresChangesPayload<WidgetData>) => {
           console.log('Widget deleted:', payload);
-          if (payload.old?.id) {
+          if (payload.old && 'id' in payload.old) {
             setWidgets(currentWidgets => 
               currentWidgets.filter(widget => widget.id !== payload.old!.id)
             );
@@ -80,9 +89,9 @@ export const Dashboard: React.FC = () => {
           schema: 'public',
           table: 'widgets'
         },
-        (payload: WidgetPayload) => {
+        (payload: RealtimePostgresChangesPayload<WidgetData>) => {
           console.log('Widget updated:', payload);
-          if (payload.new) {
+          if (payload.new && isWidgetData(payload.new)) {
             const updatedWidget: WidgetConfig = {
               id: payload.new.id,
               type: payload.new.type,
