@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChatPanel } from '@/components/ChatPanel';
@@ -142,7 +141,6 @@ const Index = () => {
     setShowSummary(true);
     
     try {
-      // First, generate the summary
       const formattedContent = widgetContents
         .map(formatWidgetContent)
         .join('\n\n---\n\n');
@@ -156,7 +154,6 @@ const Index = () => {
 
       setSummary(summaryData.summary);
 
-      // Then, generate the audio
       const { data: audioData, error: audioError } = await supabase.functions.invoke('text-to-speech', {
         body: { text: summaryData.summary }
       });
@@ -164,7 +161,6 @@ const Index = () => {
       if (audioError) throw audioError;
       if (!audioData?.audioContent) throw new Error('No audio content received');
 
-      // Play the audio
       const audioBlob = new Blob(
         [Uint8Array.from(atob(audioData.audioContent), c => c.charCodeAt(0))],
         { type: 'audio/mp3' }
@@ -258,20 +254,6 @@ const Index = () => {
           <span className="text-3xl font-['Roboto'] font-bold text-black">—pers</span>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline"
-            onClick={summarizeWidgets}
-            disabled={widgetContents.length === 0 || isSummarizing}
-          >
-            {isSummarizing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Summarizing...
-              </>
-            ) : (
-              'Summarize Widgets'
-            )}
-          </Button>
           <Button
             variant="outline"
             onClick={summarizeAndListen}
