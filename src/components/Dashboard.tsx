@@ -25,7 +25,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onEditWidget, editingWidge
         .select('*');
       
       if (!error && data) {
-        setWidgets(data as WidgetConfig[]);
+        // Sort widgets by sequence number, fallback to 0 if not set
+        const sortedWidgets = data.sort((a, b) => 
+          (a.preferences.sequence || 0) - (b.preferences.sequence || 0)
+        );
+        setWidgets(sortedWidgets);
       }
     };
 
@@ -51,7 +55,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onEditWidget, editingWidge
               preferences: payload.new.preferences,
               content: payload.new.content
             };
-            setWidgets(currentWidgets => [...currentWidgets, newWidget]);
+            setWidgets(currentWidgets => {
+              const updatedWidgets = [...currentWidgets, newWidget];
+              return updatedWidgets.sort((a, b) => 
+                (a.preferences.sequence || 0) - (b.preferences.sequence || 0)
+              );
+            });
           }
         }
       )
@@ -89,11 +98,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onEditWidget, editingWidge
               preferences: payload.new.preferences,
               content: payload.new.content
             };
-            setWidgets(currentWidgets =>
-              currentWidgets.map(widget =>
+            setWidgets(currentWidgets => {
+              const updatedWidgets = currentWidgets.map(widget =>
                 widget.id === updatedWidget.id ? updatedWidget : widget
-              )
-            );
+              );
+              return updatedWidgets.sort((a, b) => 
+                (a.preferences.sequence || 0) - (b.preferences.sequence || 0)
+              );
+            });
           }
         }
       )

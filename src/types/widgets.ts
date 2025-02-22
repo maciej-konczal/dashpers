@@ -2,6 +2,7 @@
 export type WidgetType = 'salesforce' | 'pica' | 'note';
 
 export interface WidgetPreferences {
+  sequence?: number;
   [key: string]: any;
 }
 
