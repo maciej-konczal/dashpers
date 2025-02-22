@@ -6,7 +6,7 @@ import { WidgetConfig, SalesforceWidgetPreferences } from '@/types/widgets';
 import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
-import { format } from 'date-fns';
+import { format as formatDate } from 'date-fns';
 import {
   Table,
   TableBody,
@@ -57,12 +57,12 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
     }
   });
 
-  const formatValue = (value: any, format?: string) => {
+  const formatValue = (value: any, formatType?: string) => {
     if (value === null || value === undefined) return '';
     
-    if (format === 'date' && value) {
+    if (formatType === 'date' && value) {
       try {
-        return format(new Date(value), 'MMM dd, yyyy');
+        return formatDate(new Date(value), 'MMM dd, yyyy');
       } catch (e) {
         console.error('Error formatting date:', e);
         return value;
