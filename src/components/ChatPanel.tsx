@@ -10,11 +10,7 @@ import { ChatPanelProps } from '@/types/chat';
 export const ChatPanel: React.FC<ChatPanelProps> = ({ onCommand, editingWidgetId }) => {
   const [isOpen, setIsOpen] = useState(true);
   const { messages, isProcessing, input, setInput, handleSubmit } = useChat((command: string) => {
-    // If we're editing a widget, let the chat hook handle it
-    if (editingWidgetId) {
-      return;
-    }
-    // Otherwise, pass to the regular command handler
+    if (editingWidgetId) return;
     onCommand(command);
   });
 

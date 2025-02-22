@@ -113,7 +113,7 @@ const Index = () => {
       </div>
       <div className="flex">
         <ChatPanel onCommand={handleCommand} editingWidgetId={editingWidgetId} />
-        <main className={`flex-1 transition-all duration-300 ml-[320px]`}>
+        <main className={`flex-1 transition-all duration-300 ${isChatOpen ? 'ml-[320px]' : 'ml-0'}`}>
           <Dashboard 
             onEditWidget={handleEditWidget} 
             editingWidgetId={editingWidgetId} 
