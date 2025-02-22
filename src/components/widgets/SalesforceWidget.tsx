@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -29,7 +30,7 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
   const preferences = config.preferences as SalesforceWidgetPreferences;
   
   const {
-    backgroundColor = 'bg-white',
+    backgroundColor = '#ffffff',
     soql_query,
     show_totals = false,
     chart_type = 'table',
@@ -37,10 +38,65 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
     columns = [],
   } = preferences;
 
-  console.log('Using background color:', backgroundColor);
+  const formatText = (text: string) => {
+    // Regular expression to match URLs wrapped in square brackets with text
+    const linkRegex = /\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g;
+    
+    // Split the text by links and create an array of text and link elements
+    const parts = [];
+    let lastIndex = 0;
+    let match;
 
-  // Check if the backgroundColor is a hex code (starts with #)
-  const isHexColor = backgroundColor.startsWith('#');
+    while ((match = linkRegex.exec(text)) !== null) {
+      // Add the text before the link
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index));
+      }
+
+      // Add the link
+      parts.push(
+        <a
+          key={match.index}
+          href={match[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:text-blue-800 underline"
+        >
+          {match[1]}
+        </a>
+      );
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add any remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+
+    return parts;
+  };
+
+  const formatValue = (value: any, formatType?: string) => {
+    if (value === null || value === undefined) return '';
+    
+    if (formatType === 'date' && value) {
+      try {
+        return formatDate(new Date(value), 'MMM dd, yyyy');
+      } catch (e) {
+        console.error('Error formatting date:', e);
+        return value;
+      }
+    }
+    
+    const stringValue = value.toString();
+    // Check if the value contains a markdown-style link
+    if (stringValue.includes('[') && stringValue.includes('](')) {
+      return formatText(stringValue);
+    }
+    
+    return stringValue;
+  };
 
   const { data: salesforceData, isLoading, error } = useQuery({
     queryKey: ['salesforce-data', config.id, soql_query],
@@ -69,25 +125,9 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
     }
   });
 
-  const formatValue = (value: any, formatType?: string) => {
-    if (value === null || value === undefined) return '';
-    
-    if (formatType === 'date' && value) {
-      try {
-        return formatDate(new Date(value), 'MMM dd, yyyy');
-      } catch (e) {
-        console.error('Error formatting date:', e);
-        return value;
-      }
-    }
-    
-    return value.toString();
-  };
-
   const renderTableView = (data: any[]) => {
     if (!data || data.length === 0) return <p>No data available</p>;
 
-    // Use columns configuration if available, otherwise fall back to all fields
     const displayColumns: Column[] = columns.length > 0 
       ? columns 
       : Object.keys(data[0]).map(field => ({ field, label: field }));
@@ -129,11 +169,8 @@ export const SalesforceWidget: React.FC<SalesforceWidgetProps> = ({ config }) =>
 
   return (
     <div 
-      style={isHexColor ? { backgroundColor } : undefined}
-      className={cn(
-        "rounded-lg shadow-lg min-h-[200px]",
-        !isHexColor && backgroundColor // Only apply Tailwind class if not hex
-      )}
+      style={{ backgroundColor }}
+      className="rounded-lg shadow-lg min-h-[200px]"
     >
       <Card className="widget border-none shadow-none bg-transparent">
         <CardHeader className="bg-transparent">

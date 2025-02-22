@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { WidgetConfig } from '@/types/widgets';
@@ -62,6 +63,45 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
     }
   }, [config.preferences.prompt, config.preferences.tool]);
 
+  const formatText = (text: string) => {
+    // Regular expression to match URLs wrapped in square brackets with text
+    const linkRegex = /\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g;
+    
+    // Split the text by links and create an array of text and link elements
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = linkRegex.exec(text)) !== null) {
+      // Add the text before the link
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index));
+      }
+
+      // Add the link
+      parts.push(
+        <a
+          key={match.index}
+          href={match[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:text-blue-800 underline"
+        >
+          {match[1]}
+        </a>
+      );
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add any remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+
+    return parts;
+  };
+
   return (
     <Card 
       className="widget" 
@@ -84,9 +124,15 @@ export const PicaWidget: React.FC<PicaWidgetProps> = ({ config }) => {
           </div>
         ) : (
           <div className="prose">
-            <pre className="whitespace-pre-wrap">
-              {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
-            </pre>
+            {typeof result === 'string' ? (
+              <div className="whitespace-pre-wrap">
+                {formatText(result)}
+              </div>
+            ) : (
+              <pre className="whitespace-pre-wrap">
+                {JSON.stringify(result, null, 2)}
+              </pre>
+            )}
           </div>
         )}
       </CardContent>
