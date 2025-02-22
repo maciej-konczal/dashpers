@@ -78,11 +78,11 @@ export const Dashboard: React.FC = () => {
           schema: 'public',
           table: 'widgets'
         },
-        (payload: RealtimePostgresChangesPayload<WidgetData>) => {
+        (payload: RealtimePostgresChangesPayload<{ id: string }>) => {
           console.log('Widget deleted:', payload);
           if (payload.old && hasValidId(payload.old)) {
             setWidgets(currentWidgets => 
-              currentWidgets.filter(widget => widget.id !== payload.old.id)
+              currentWidgets.filter(widget => widget.id !== payload.old!.id)
             );
           }
         }
