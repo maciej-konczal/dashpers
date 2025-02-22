@@ -83,6 +83,7 @@ const Index = () => {
 
   const handleEditWidget = (widgetId: string) => {
     setEditingWidgetId(widgetId);
+    setIsChatOpen(true); // Always open chat when editing
     toast.info("Edit mode activated. Describe your changes in the chat.");
   };
 
