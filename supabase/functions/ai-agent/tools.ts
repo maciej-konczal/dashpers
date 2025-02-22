@@ -1,4 +1,3 @@
-
 import { Tool } from './types.ts';
 
 export const tools: Record<string, Tool> = {
@@ -10,7 +9,7 @@ export const tools: Record<string, Tool> = {
       properties: {
         type: {
           type: "string",
-          enum: ["salesforce", "slack", "news", "weather", "calendar", "chart"],
+          enum: ["salesforce", "pica", "slack", "news", "weather", "calendar", "chart"],
           description: "The type of widget to create"
         },
         title: {
@@ -19,31 +18,13 @@ export const tools: Record<string, Tool> = {
         },
         preferences: {
           type: "object",
-          description: "Widget-specific preferences. For Salesforce widgets, must include detailed configuration.",
+          description: "Widget-specific preferences. For Pica widgets, must include prompt and optional tool name.",
           example: {
-            "columns": [
-              {
-                "field": "Name",
-                "label": "Contact Name"
-              },
-              {
-                "field": "Email",
-                "label": "Email Address"
-              },
-              {
-                "field": "CreatedDate",
-                "label": "Created",
-                "format": "date"
-              }
-            ],
-            "chart_type": "table",
-            "soql_query": "SELECT Id, Name, Email, CreatedDate FROM Contact ORDER BY CreatedDate DESC",
-            "max_records": 5,
-            "object_type": "Contact",
-            "show_totals": true,
+            "prompt": "Get the current weather for London",
+            "tool": "weather",
+            "maxSteps": 5,
             "backgroundColor": "bg-blue-100",
-            "refreshInterval": 300,
-            "fields_to_display": ["Name", "Email", "CreatedDate"]
+            "refreshInterval": 300
           }
         }
       },
