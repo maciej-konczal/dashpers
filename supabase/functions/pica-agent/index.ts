@@ -67,13 +67,19 @@ serve(async (req) => {
 
       console.log('Stream created successfully');
 
-      // Get the final text response
-      const result = await stream.finalText();
-      console.log('Got final result:', result);
+      // Collect all chunks from the stream
+      let fullText = '';
+      for await (const chunk of stream) {
+        if (typeof chunk === 'string') {
+          fullText += chunk;
+        }
+      }
+
+      console.log('Got full text:', fullText);
 
       // Return the result as a properly formatted JSON response
       return new Response(
-        JSON.stringify({ result }), 
+        JSON.stringify({ result: fullText }), 
         { headers: corsHeaders }
       );
 
