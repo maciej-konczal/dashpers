@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Pica } from "npm:@picahq/ai";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,30 +14,46 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, maxSteps = 20 } = await req.json();
-    console.log('Received request with params:', { prompt, maxSteps });
+    const { prompt, tool = "weather", maxSteps = 5 } = await req.json();
+    console.log('Received request with params:', { prompt, tool, maxSteps });
 
     const pica_key = Deno.env.get('PICA_SECRET_KEY');
     if (!pica_key) {
       throw new Error('PICA_SECRET_KEY is not set');
     }
 
-    // Initialize Pica SDK
-    const pica = new Pica({
-      apiKey: pica_key
-    });
-
-    console.log('Sending request to Pica using SDK...');
-    const completion = await pica.chat.completions.create({
+    // Using the base URL and v1 API endpoint
+    const requestBody = {
+      model: "gpt-4o-mini",
       messages: [{ role: 'user', content: prompt }],
-      model: "gpt-4",
-      tools: ["pica.oneTool"],
+      tool: tool,
       max_steps: maxSteps
-    });
+    };
 
+    const requestConfig = {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${pica_key}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    };
+
+    // Use the base API endpoint
+    const response = await fetch('https://api.pica.io/v1/chat', requestConfig);
+    console.log('Response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API error response:', errorText);
+      throw new Error(`Pica API error (${response.status}): ${errorText}`);
+    }
+
+    const result = await response.json();
     console.log('Successfully received response from Pica');
     
-    return new Response(JSON.stringify({ result: completion }), {
+    return new Response(JSON.stringify({ result }), {
       headers: {
         ...corsHeaders,
         'Cache-Control': 'no-cache'
